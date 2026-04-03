@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verlauf – Jorge Faktura App</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f5f5f5; color: #333; }
+
+    header {
+      background: #2c3e50;
+      color: white;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header h1 { font-size: 1.2rem; }
+    header a { color: #aad4f5; text-decoration: none; font-size: 0.9rem; }
+    header a:hover { text-decoration: underline; }
+
+    .container { max-width: 900px; margin: 32px auto; padding: 0 16px; }
+
+    .page-title {
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .page-subtitle {
+      color: #666;
+      margin-bottom: 24px;
+      font-size: 0.95rem;
+    }
+
+    .filter-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .filter-bar input, .filter-bar select {
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+    .filter-bar input { flex: 1; min-width: 180px; }
+
+    .stats {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .stat-card {
+      background: white;
+      border-radius: 8px;
+      padding: 16px 20px;
+      flex: 1;
+      min-width: 150px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .stat-card .label { font-size: 0.8rem; color: #888; margin-bottom: 4px; }
+    .stat-card .value { font-size: 1.4rem; font-weight: bold; }
+    .stat-card.green .value { color: #27ae60; }
+    .stat-card.orange .value { color: #e67e22; }
+    .stat-card.red .value { color: #e74c3c; }
+
+    table {
+      width: 100%;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      border-collapse: collapse;
+      overflow: hidden;
+    }
+    thead { background: #2c3e50; color: white; }
+    th { padding: 12px 16px; text-align: left; font-size: 0.85rem; font-weight: 600; }
+    td { padding: 12px 16px; font-size: 0.9rem; border-bottom: 1px solid #eee; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f9f9f9; }
+
+    .status-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.78rem;
+      font-weight: bold;
+    }
+    .status-bezahlt  { background: #d4efdf; color: #1e8449; }
+    .status-offen    { background: #fdebd0; color: #ca6f1e; }
+    .status-überfällig { background: #fadbd8; color: #922b21; }
+    .status-storniert { background: #eaecee; color: #555; }
+
+    .amount { font-weight: bold; }
+    .amount.positive { color: #27ae60; }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #aaa;
+    }
+    .empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
+    .empty-state p { font-size: 1rem; }
+
+    .btn-new {
+      background: #2c3e50;
+      color: white;
+      border: none;
+      padding: 9px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-new:hover { background: #3d5166; }
+
+    .pagination {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .pagination button {
+      padding: 6px 14px;
+      border: 1px solid #ccc;
+      background: white;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .pagination button.active { background: #2c3e50; color: white; border-color: #2c3e50; }
+    .pagination button:disabled { opacity: 0.4; cursor: default; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Jorge Faktura App</h1>
+  <a href="index.html">← Startseite</a>
+</header>
+
+<div class="container">
+  <div class="page-title">Rechnungsverlauf</div>
+  <div class="page-subtitle">Alle deine Rechnungen auf einen Blick</div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="filter-bar">
+    <input type="text" id="search" placeholder="Suche nach Empfänger oder Nummer…" oninput="render()">
+    <select id="statusFilter" onchange="render()">
+      <option value="">Alle Status</option>
+      <option value="Bezahlt">Bezahlt</option>
+      <option value="Offen">Offen</option>
+      <option value="Überfällig">Überfällig</option>
+      <option value="Storniert">Storniert</option>
+    </select>
+    <a class="btn-new" href="index.html">+ Neue Rechnung</a>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Nr.</th>
+        <th>Datum</th>
+        <th>Empfänger</th>
+        <th>Betrag</th>
+        <th>Status</th>
+        <th>Fällig am</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+  <div id="emptyState" class="empty-state" style="display:none;">
+    <div class="icon">📄</div>
+    <p>Keine Rechnungen gefunden.</p>
+  </div>
+  <div class="pagination" id="pagination"></div>
+</div>
+
+<script>
+  // Demo-Daten – werden durch echte localStorage-Daten ersetzt, falls vorhanden
+  const DEMO_DATA = [
+    { id: "R-2026-001", datum: "2026-01-10", empfaenger: "Müller GmbH",       betrag: 1250.00, status: "Bezahlt",   faellig: "2026-01-24" },
+    { id: "R-2026-002", datum: "2026-01-18", empfaenger: "Schmidt & Co.",      betrag:  830.50, status: "Bezahlt",   faellig: "2026-02-01" },
+    { id: "R-2026-003", datum: "2026-02-03", empfaenger: "Bauer Consulting",   betrag: 3200.00, status: "Offen",     faellig: "2026-02-17" },
+    { id: "R-2026-004", datum: "2026-02-14", empfaenger: "Weber IT GmbH",      betrag:  560.00, status: "Überfällig",faellig: "2026-02-28" },
+    { id: "R-2026-005", datum: "2026-02-20", empfaenger: "Fischer Design",     betrag: 1780.00, status: "Bezahlt",   faellig: "2026-03-06" },
+    { id: "R-2026-006", datum: "2026-03-01", empfaenger: "Herrmann Logistics", betrag: 4500.00, status: "Offen",     faellig: "2026-03-15" },
+    { id: "R-2026-007", datum: "2026-03-08", empfaenger: "Klein & Partner",    betrag:  990.00, status: "Storniert", faellig: "2026-03-22" },
+    { id: "R-2026-008", datum: "2026-03-15", empfaenger: "Richter Medien",     betrag: 2100.00, status: "Überfällig",faellig: "2026-03-29" },
+    { id: "R-2026-009", datum: "2026-03-22", empfaenger: "Braun Software",     betrag: 1450.00, status: "Offen",     faellig: "2026-04-05" },
+    { id: "R-2026-010", datum: "2026-03-30", empfaenger: "Zimmermann AG",      betrag: 6750.00, status: "Offen",     faellig: "2026-04-13" },
+  ];
+
+  const PAGE_SIZE = 8;
+  let currentPage = 1;
+
+  function loadData() {
+    try {
+      const stored = localStorage.getItem("faktura_verlauf");
+      if (stored) return JSON.parse(stored);
+    } catch (e) {}
+    return DEMO_DATA;
+  }
+
+  function statusClass(status) {
+    return "status-" + status.toLowerCase().replace("ä","ä").replace("ü","ü");
+  }
+
+  function fmt(betrag) {
+    return betrag.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return "–";
+    const [y, m, d] = iso.split("-");
+    return `${d}.${m}.${y}`;
+  }
+
+  function renderStats(data) {
+    const total   = data.length;
+    const bezahlt = data.filter(r => r.status === "Bezahlt").reduce((s, r) => s + r.betrag, 0);
+    const offen   = data.filter(r => r.status === "Offen" || r.status === "Überfällig").reduce((s, r) => s + r.betrag, 0);
+    const ueber   = data.filter(r => r.status === "Überfällig").length;
+
+    document.getElementById("stats").innerHTML = `
+      <div class="stat-card">
+        <div class="label">Rechnungen gesamt</div>
+        <div class="value">${total}</div>
+      </div>
+      <div class="stat-card green">
+        <div class="label">Bezahlt</div>
+        <div class="value">${fmt(bezahlt)}</div>
+      </div>
+      <div class="stat-card orange">
+        <div class="label">Ausstehend</div>
+        <div class="value">${fmt(offen)}</div>
+      </div>
+      <div class="stat-card red">
+        <div class="label">Überfällig</div>
+        <div class="value">${ueber} Rechnung${ueber !== 1 ? "en" : ""}</div>
+      </div>
+    `;
+  }
+
+  function render() {
+    const data       = loadData();
+    const search     = document.getElementById("search").value.toLowerCase();
+    const statusFilter = document.getElementById("statusFilter").value;
+
+    renderStats(data);
+
+    const filtered = data.filter(r => {
+      const matchSearch = !search ||
+        r.id.toLowerCase().includes(search) ||
+        r.empfaenger.toLowerCase().includes(search);
+      const matchStatus = !statusFilter || r.status === statusFilter;
+      return matchSearch && matchStatus;
+    });
+
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    if (currentPage > totalPages) currentPage = totalPages;
+    const page = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+    const tbody = document.getElementById("tableBody");
+    const empty = document.getElementById("emptyState");
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = "";
+      empty.style.display = "block";
+    } else {
+      empty.style.display = "none";
+      tbody.innerHTML = page.map(r => `
+        <tr>
+          <td><strong>${r.id}</strong></td>
+          <td>${fmtDate(r.datum)}</td>
+          <td>${r.empfaenger}</td>
+          <td class="amount positive">${fmt(r.betrag)}</td>
+          <td><span class="status-badge ${statusClass(r.status)}">${r.status}</span></td>
+          <td>${fmtDate(r.faellig)}</td>
+        </tr>
+      `).join("");
+    }
+
+    // Pagination
+    const pag = document.getElementById("pagination");
+    if (totalPages <= 1) { pag.innerHTML = ""; return; }
+    let html = `<button onclick="goPage(${currentPage-1})" ${currentPage===1?"disabled":""}>‹</button>`;
+    for (let i = 1; i <= totalPages; i++) {
+      html += `<button class="${i===currentPage?"active":""}" onclick="goPage(${i})">${i}</button>`;
+    }
+    html += `<button onclick="goPage(${currentPage+1})" ${currentPage===totalPages?"disabled":""}>›</button>`;
+    pag.innerHTML = html;
+  }
+
+  function goPage(n) { currentPage = n; render(); }
+
+  render();
+</script>
+</body>
+</html>
