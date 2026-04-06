@@ -334,20 +334,212 @@
           <div id="re-empty" class="hidden px-5 py-10 text-center text-gray-400 text-sm">Keine Rechnungen gefunden.</div>
         </div>
       </div>
+      <!-- ══ LIEFERSCHEINE ══ -->
       <div id="page-lieferscheine" class="page">
-        <p class="text-gray-400">Lieferscheine wird in Schritt 5 gebaut...</p>
+        <div class="flex items-center gap-3 mb-5">
+          <div class="flex-1 relative">
+            <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/></svg>
+            <input id="ls-search" type="text" placeholder="Lieferschein suchen…" oninput="filterLieferscheine()" class="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 bg-white">
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div class="hidden md:grid grid-cols-12 gap-2 px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider" style="border-bottom:1px solid #F3F4F6;">
+            <div class="col-span-3">Nummer</div><div class="col-span-4">Kunde</div><div class="col-span-2">Datum</div><div class="col-span-2 text-center">Status</div><div class="col-span-1"></div>
+          </div>
+          <div id="ls-list"></div>
+          <div id="ls-empty" class="hidden px-5 py-10 text-center text-gray-400 text-sm">Keine Lieferscheine gefunden.</div>
+        </div>
       </div>
+
+      <!-- ══ SCHREIBEN ══ -->
       <div id="page-schreiben" class="page">
-        <p class="text-gray-400">Schreiben wird in Schritt 6 gebaut...</p>
+        <div class="flex items-center gap-3 mb-5">
+          <div class="flex-1 relative">
+            <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/></svg>
+            <input id="sc-search" type="text" placeholder="Schreiben suchen…" oninput="filterSchreiben()" class="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 bg-white">
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div class="hidden md:grid grid-cols-12 gap-2 px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider" style="border-bottom:1px solid #F3F4F6;">
+            <div class="col-span-4">Titel</div><div class="col-span-3">Empfänger</div><div class="col-span-2">Datum</div><div class="col-span-2 text-center">Status</div><div class="col-span-1"></div>
+          </div>
+          <div id="sc-list"></div>
+          <div id="sc-empty" class="hidden px-5 py-10 text-center text-gray-400 text-sm">Keine Schreiben gefunden.</div>
+        </div>
       </div>
+
+      <!-- ══ VORLAGEN ══ -->
       <div id="page-vorlagen" class="page">
-        <p class="text-gray-400">Vorlagen wird in Schritt 7 gebaut...</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow cursor-pointer">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style="background:#EEF2FF;">
+              <svg class="w-5 h-5" style="color:#3B5BDB;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
+            <h3 class="text-sm font-semibold text-gray-900">Standard-Rechnung</h3>
+            <p class="text-xs text-gray-400 mt-1">Einfache Rechnung mit MwSt.</p>
+            <button class="mt-4 w-full text-xs font-semibold py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors" onclick="alert('Vorlage verwenden')">Verwenden</button>
+          </div>
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow cursor-pointer">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style="background:#FFFBEB;">
+              <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            </div>
+            <h3 class="text-sm font-semibold text-gray-900">Lieferschein-Vorlage</h3>
+            <p class="text-xs text-gray-400 mt-1">Mit Positionsliste und Unterschrift.</p>
+            <button class="mt-4 w-full text-xs font-semibold py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors" onclick="alert('Vorlage verwenden')">Verwenden</button>
+          </div>
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow cursor-pointer">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style="background:#ECFDF5;">
+              <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            </div>
+            <h3 class="text-sm font-semibold text-gray-900">Angebot</h3>
+            <p class="text-xs text-gray-400 mt-1">Professionelles Angebot mit Gültigkeit.</p>
+            <button class="mt-4 w-full text-xs font-semibold py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors" onclick="alert('Vorlage verwenden')">Verwenden</button>
+          </div>
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow cursor-pointer">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style="background:#FEE2E2;">
+              <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
+            <h3 class="text-sm font-semibold text-gray-900">Mahnung</h3>
+            <p class="text-xs text-gray-400 mt-1">Erste und zweite Mahnung.</p>
+            <button class="mt-4 w-full text-xs font-semibold py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors" onclick="alert('Vorlage verwenden')">Verwenden</button>
+          </div>
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow cursor-pointer">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style="background:#F5F3FF;">
+              <svg class="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            </div>
+            <h3 class="text-sm font-semibold text-gray-900">Geschäftsbrief</h3>
+            <p class="text-xs text-gray-400 mt-1">Formeller Brief mit Briefkopf.</p>
+            <button class="mt-4 w-full text-xs font-semibold py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors" onclick="alert('Vorlage verwenden')">Verwenden</button>
+          </div>
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow cursor-pointer border-dashed flex flex-col items-center justify-center text-center" style="border:2px dashed #E5E7EB;">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-gray-100">
+              <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            </div>
+            <h3 class="text-sm font-semibold text-gray-500">Neue Vorlage</h3>
+            <p class="text-xs text-gray-400 mt-1">Eigene Vorlage erstellen</p>
+          </div>
+        </div>
       </div>
+
+      <!-- ══ EINSTELLUNGEN ══ -->
       <div id="page-einstellungen" class="page">
-        <p class="text-gray-400">Einstellungen wird in Schritt 8 gebaut...</p>
+        <div class="max-w-2xl space-y-6">
+
+          <!-- Firmendaten -->
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div class="px-6 py-4" style="border-bottom:1px solid #F3F4F6;">
+              <h2 class="text-base font-semibold text-gray-900">Firmendaten</h2>
+            </div>
+            <div class="px-6 py-5 space-y-4">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Firmenname</label>
+                  <input id="s-firma" type="text" value="Jorge Pinto" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">USt-IdNr.</label>
+                  <input id="s-ust" type="text" placeholder="DE123456789" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Adresse</label>
+                <input id="s-adresse" type="text" placeholder="Musterstraße 1, 12345 Berlin" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">E-Mail</label>
+                  <input id="s-email" type="email" placeholder="info@firma.de" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Telefon</label>
+                  <input id="s-telefon" type="text" placeholder="+49 …" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
+                </div>
+              </div>
+              <button onclick="alert('Gespeichert!')" class="text-white px-4 py-2 rounded-xl text-sm font-semibold" style="background:#3B5BDB;">Speichern</button>
+            </div>
+          </div>
+
+          <!-- Bankverbindung -->
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div class="px-6 py-4" style="border-bottom:1px solid #F3F4F6;">
+              <h2 class="text-base font-semibold text-gray-900">Bankverbindung</h2>
+            </div>
+            <div class="px-6 py-5 space-y-4">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">IBAN</label>
+                  <input type="text" placeholder="DE00 0000 0000 0000 0000 00" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">BIC</label>
+                  <input type="text" placeholder="DEUTDEDB" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Bank</label>
+                <input type="text" placeholder="Deutsche Bank" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
+              </div>
+              <button onclick="alert('Gespeichert!')" class="text-white px-4 py-2 rounded-xl text-sm font-semibold" style="background:#3B5BDB;">Speichern</button>
+            </div>
+          </div>
+
+          <!-- Profile -->
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div class="flex items-center justify-between px-6 py-4" style="border-bottom:1px solid #F3F4F6;">
+              <h2 class="text-base font-semibold text-gray-900">Profile</h2>
+              <button onclick="document.getElementById('modal-profil').classList.remove('hidden')" class="text-xs font-semibold text-white px-3 py-1.5 rounded-lg" style="background:#3B5BDB;">+ Neues Profil</button>
+            </div>
+            <div id="profil-list"></div>
+          </div>
+
+          <!-- Rechnungsnummern -->
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div class="px-6 py-4" style="border-bottom:1px solid #F3F4F6;">
+              <h2 class="text-base font-semibold text-gray-900">Rechnungsnummern</h2>
+            </div>
+            <div class="px-6 py-5 space-y-4">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Präfix</label>
+                  <input type="text" value="RE-" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Nächste Nummer</label>
+                  <input type="number" value="5" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
+                </div>
+              </div>
+              <button onclick="alert('Gespeichert!')" class="text-white px-4 py-2 rounded-xl text-sm font-semibold" style="background:#3B5BDB;">Speichern</button>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <!-- ══ PROFILE ══ -->
       <div id="page-profile" class="page">
-        <p class="text-gray-400">Profile wird in Schritt 8 gebaut...</p>
+        <div class="max-w-md">
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div class="px-6 py-5 flex flex-col items-center" style="border-bottom:1px solid #F3F4F6;">
+              <div class="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-bold mb-3" style="background:#3B5BDB;">JO</div>
+              <h2 class="text-lg font-semibold text-gray-900">Jorge Pinto</h2>
+              <p class="text-sm text-gray-400">Administrator</p>
+            </div>
+            <div class="px-6 py-5 space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <input type="text" value="Jorge Pinto" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">E-Mail</label>
+                <input type="email" value="jorge@faktura.top" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Neues Passwort</label>
+                <input type="password" placeholder="••••••••" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
+              </div>
+              <button onclick="alert('Profil gespeichert!')" class="w-full text-white py-2.5 rounded-xl text-sm font-semibold" style="background:#3B5BDB;">Profil speichern</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </main>
@@ -389,8 +581,11 @@
     document.querySelectorAll('.nav-link').forEach(l => {
       if (l.getAttribute('onclick') === `showPage('${name}')`) l.classList.add('active');
     });
-    if (name === 'kunden') filterKunden();
-    if (name === 'rechnungen') filterRechnungen();
+    if (name === 'kunden')       filterKunden();
+    if (name === 'rechnungen')   filterRechnungen();
+    if (name === 'lieferscheine') filterLieferscheine();
+    if (name === 'schreiben')    filterSchreiben();
+    if (name === 'einstellungen') renderProfileList();
   }
 
   // ── Daten ──────────────────────────────────────────
@@ -542,23 +737,159 @@
   let currentPage = 'dashboard';
 
   function openModal() {
-    const map = { kunden:'modal-kunden', rechnungen:'modal-rechnung', dashboard:'modal-rechnung' };
+    const map = { kunden:'modal-kunden', rechnungen:'modal-rechnung', dashboard:'modal-rechnung', lieferscheine:'modal-lieferschein', schreiben:'modal-schreiben' };
     const id = map[currentPage] || null;
     if (!id) return;
+    const today = new Date().toISOString().slice(0,10);
     if (id === 'modal-rechnung') {
-      const today = new Date().toISOString().slice(0,10);
-      const faellig = new Date(Date.now()+30*86400000).toISOString().slice(0,10);
       document.getElementById('r-datum').value = today;
-      document.getElementById('r-faellig').value = faellig;
-      // Kundenliste für Autocomplete
-      document.getElementById('r-kunde-list').innerHTML =
-        kunden.map(k => `<option value="${k.firma}">`).join('');
+      document.getElementById('r-faellig').value = new Date(Date.now()+30*86400000).toISOString().slice(0,10);
+      document.getElementById('r-kunde-list').innerHTML = kunden.map(k=>`<option value="${k.firma}">`).join('');
+    }
+    if (id === 'modal-lieferschein') {
+      document.getElementById('ls-datum').value = today;
+      document.getElementById('ls-kunde-list').innerHTML = kunden.map(k=>`<option value="${k.firma}">`).join('');
+    }
+    if (id === 'modal-schreiben') {
+      document.getElementById('sc-datum').value = today;
+      document.getElementById('sc-emp-list').innerHTML = kunden.map(k=>`<option value="${k.firma}">`).join('');
     }
     document.getElementById(id).classList.remove('hidden');
   }
 
   function closeModal() {
     document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+  }
+
+  // ── Lieferscheine ───────────────────────────────────
+  let lieferscheine = JSON.parse(localStorage.getItem('lieferscheine') || 'null') || [
+    { id:1, nummer:'LS-20260320-01', kunde:'La Fattoria GmbH',      datum:'2026-03-20', status:'GELIEFERT' },
+    { id:2, nummer:'LS-20260310-02', kunde:'Techwave Solutions',     datum:'2026-03-10', status:'OFFEN' },
+  ];
+  function saveLieferscheine() { localStorage.setItem('lieferscheine', JSON.stringify(lieferscheine)); }
+  function renderLieferscheine(list) {
+    const el = document.getElementById('ls-list');
+    const empty = document.getElementById('ls-empty');
+    if (!list.length) { el.innerHTML=''; empty.classList.remove('hidden'); return; }
+    empty.classList.add('hidden');
+    const st = { 'OFFEN':'background:#DBEAFE;color:#1E40AF;', 'GELIEFERT':'background:#D1FAE5;color:#065F46;', 'STORNIERT':'background:#FEE2E2;color:#991B1B;' };
+    el.innerHTML = list.map(l => `
+      <div class="grid grid-cols-12 gap-2 items-center px-5 py-3.5 hover:bg-gray-50" style="border-bottom:1px solid #F9FAFB;">
+        <div class="col-span-12 md:col-span-3 text-sm font-semibold text-gray-900">${l.nummer}</div>
+        <div class="hidden md:block col-span-4 text-sm text-gray-600">${l.kunde}</div>
+        <div class="hidden md:block col-span-2 text-xs text-gray-400">${l.datum}</div>
+        <div class="hidden md:flex col-span-2 justify-center"><span class="text-xs px-2 py-0.5 rounded font-semibold" style="${st[l.status]||''}">${l.status}</span></div>
+        <div class="hidden md:flex col-span-1 justify-end">
+          <button onclick="deleteLieferschein(${l.id})" class="p-1.5 rounded-lg hover:bg-red-50 text-gray-300 hover:text-red-400">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          </button>
+        </div>
+      </div>`).join('');
+  }
+  function filterLieferscheine() {
+    const q = (document.getElementById('ls-search').value||'').toLowerCase();
+    renderLieferscheine(lieferscheine.filter(l => l.nummer.toLowerCase().includes(q)||l.kunde.toLowerCase().includes(q)));
+  }
+  function deleteLieferschein(id) {
+    if (!confirm('Lieferschein wirklich löschen?')) return;
+    lieferscheine = lieferscheine.filter(l => l.id!==id); saveLieferscheine(); filterLieferscheine();
+  }
+  function addLieferschein() {
+    const kunde = document.getElementById('ls-kunde').value.trim();
+    const datum = document.getElementById('ls-datum').value;
+    const status = document.getElementById('ls-status').value;
+    if (!kunde) { alert('Bitte Kunde eingeben.'); return; }
+    const nr = lieferscheine.length+1;
+    const today = new Date(); const y=today.getFullYear(),m=String(today.getMonth()+1).padStart(2,'0'),d=String(today.getDate()).padStart(2,'0');
+    lieferscheine.unshift({ id:Date.now(), nummer:`LS-${y}${m}${d}-${String(nr).padStart(2,'0')}`, kunde, datum, status });
+    saveLieferscheine(); closeModal(); showPage('lieferscheine');
+  }
+
+  // ── Schreiben ────────────────────────────────────────
+  let schreiben = JSON.parse(localStorage.getItem('schreiben') || 'null') || [
+    { id:1, titel:'Angebot Webentwicklung',    empfaenger:'La Fattoria GmbH',      datum:'2026-03-25', status:'GESENDET' },
+    { id:2, titel:'Auftragsbestätigung',        empfaenger:'Techwave Solutions',     datum:'2026-03-18', status:'ENTWURF'  },
+    { id:3, titel:'Mahnung RE-20260301-03',     empfaenger:'Müller & Partner KG',   datum:'2026-04-01', status:'GESENDET' },
+    { id:4, titel:'Willkommensschreiben',       empfaenger:'Infosys Limited',        datum:'2026-01-20', status:'GESENDET' },
+    { id:5, titel:'Jahresabschluss 2025',       empfaenger:'Global Tech GmbH',      datum:'2026-01-05', status:'ARCHIVIERT'},
+  ];
+  function saveSchreiben() { localStorage.setItem('schreiben', JSON.stringify(schreiben)); }
+  function renderSchreiben(list) {
+    const el = document.getElementById('sc-list');
+    const empty = document.getElementById('sc-empty');
+    if (!list.length) { el.innerHTML=''; empty.classList.remove('hidden'); return; }
+    empty.classList.add('hidden');
+    const st = { 'ENTWURF':'background:#FEF3C7;color:#92400E;','GESENDET':'background:#D1FAE5;color:#065F46;','ARCHIVIERT':'background:#F3F4F6;color:#6B7280;' };
+    el.innerHTML = list.map(s => `
+      <div class="grid grid-cols-12 gap-2 items-center px-5 py-3.5 hover:bg-gray-50" style="border-bottom:1px solid #F9FAFB;">
+        <div class="col-span-12 md:col-span-4 text-sm font-semibold text-gray-900">${s.titel}</div>
+        <div class="hidden md:block col-span-3 text-sm text-gray-600 truncate">${s.empfaenger}</div>
+        <div class="hidden md:block col-span-2 text-xs text-gray-400">${s.datum}</div>
+        <div class="hidden md:flex col-span-2 justify-center"><span class="text-xs px-2 py-0.5 rounded font-semibold" style="${st[s.status]||''}">${s.status}</span></div>
+        <div class="hidden md:flex col-span-1 justify-end">
+          <button onclick="deleteSchreiben(${s.id})" class="p-1.5 rounded-lg hover:bg-red-50 text-gray-300 hover:text-red-400">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          </button>
+        </div>
+      </div>`).join('');
+  }
+  function filterSchreiben() {
+    const q = (document.getElementById('sc-search').value||'').toLowerCase();
+    renderSchreiben(schreiben.filter(s => s.titel.toLowerCase().includes(q)||s.empfaenger.toLowerCase().includes(q)));
+  }
+  function deleteSchreiben(id) {
+    if (!confirm('Schreiben wirklich löschen?')) return;
+    schreiben = schreiben.filter(s => s.id!==id); saveSchreiben(); filterSchreiben();
+  }
+  function addSchreiben() {
+    const titel = document.getElementById('sc-titel').value.trim();
+    const empfaenger = document.getElementById('sc-empfaenger').value.trim();
+    const datum = document.getElementById('sc-datum').value;
+    const status = document.getElementById('sc-status').value;
+    if (!titel) { alert('Bitte Titel eingeben.'); return; }
+    schreiben.unshift({ id:Date.now(), titel, empfaenger, datum, status });
+    saveSchreiben(); closeModal(); showPage('schreiben');
+  }
+
+  // ── Profile ──────────────────────────────────────────
+  let profile = JSON.parse(localStorage.getItem('profile') || 'null') || [
+    { id:1, name:'Jorge Pinto', rolle:'Administrator', kuerzel:'JO', farbe:'#3B5BDB', aktiv:true  },
+    { id:2, name:'Ana',         rolle:'Mitarbeiter',   kuerzel:'AN', farbe:'#10B981', aktiv:false },
+  ];
+  function saveProfile() { localStorage.setItem('profile', JSON.stringify(profile)); }
+  function renderProfileList() {
+    const el = document.getElementById('profil-list');
+    if (!el) return;
+    el.innerHTML = profile.map(p => `
+      <div class="flex items-center gap-4 px-6 py-4 hover:bg-gray-50" style="border-bottom:1px solid #F9FAFB;">
+        <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0" style="background:${p.farbe};">${p.kuerzel}</div>
+        <div class="flex-1">
+          <p class="text-sm font-semibold text-gray-900">${p.name}</p>
+          <p class="text-xs text-gray-400">${p.rolle}</p>
+        </div>
+        <div class="flex items-center gap-2">
+          ${p.aktiv ? '<span class="text-xs px-2 py-0.5 rounded font-semibold" style="background:#D1FAE5;color:#065F46;">Aktiv</span>' : ''}
+          <button onclick="deleteProfil(${p.id})" class="p-1.5 rounded-lg hover:bg-red-50 text-gray-300 hover:text-red-400">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          </button>
+        </div>
+      </div>`).join('');
+  }
+  function deleteProfil(id) {
+    if (!confirm('Profil wirklich löschen?')) return;
+    profile = profile.filter(p => p.id!==id); saveProfile(); renderProfileList();
+  }
+  function addProfil() {
+    const name = document.getElementById('p-name').value.trim();
+    const rolle = document.getElementById('p-rolle').value;
+    if (!name) { alert('Bitte Name eingeben.'); return; }
+    const kuerzel = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    const farben = ['#3B5BDB','#10B981','#F59E0B','#EF4444','#8B5CF6','#06B6D4'];
+    const farbe = farben[profile.length % farben.length];
+    profile.push({ id:Date.now(), name, rolle, kuerzel, farbe, aktiv:false });
+    saveProfile(); renderProfileList();
+    document.getElementById('modal-profil').classList.add('hidden');
+    document.getElementById('p-name').value='';
   }
 
   // Chart
@@ -675,6 +1006,108 @@
     <div class="px-6 pb-5 flex gap-3">
       <button onclick="closeModal()" class="flex-1 border border-gray-200 text-gray-700 rounded-xl py-2.5 text-sm font-medium hover:bg-gray-50">Abbrechen</button>
       <button onclick="addRechnung()" class="flex-1 text-white rounded-xl py-2.5 text-sm font-semibold" style="background:#3B5BDB;">Erstellen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Neuer Lieferschein -->
+<div id="modal-lieferschein" class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+    <div class="flex items-center justify-between px-6 py-5" style="border-bottom:1px solid #F3F4F6;">
+      <h2 class="text-lg font-semibold text-gray-900">Neuer Lieferschein</h2>
+      <button onclick="closeModal()" class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+    </div>
+    <div class="px-6 py-5 space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Kunde *</label>
+        <input id="ls-kunde" type="text" placeholder="Kundenname" list="ls-kunde-list" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
+        <datalist id="ls-kunde-list"></datalist>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Datum</label>
+          <input id="ls-datum" type="date" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <select id="ls-status" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 bg-white">
+            <option value="OFFEN">Offen</option>
+            <option value="GELIEFERT">Geliefert</option>
+            <option value="STORNIERT">Storniert</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="px-6 pb-5 flex gap-3">
+      <button onclick="closeModal()" class="flex-1 border border-gray-200 text-gray-700 rounded-xl py-2.5 text-sm font-medium hover:bg-gray-50">Abbrechen</button>
+      <button onclick="addLieferschein()" class="flex-1 text-white rounded-xl py-2.5 text-sm font-semibold" style="background:#3B5BDB;">Erstellen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Neues Schreiben -->
+<div id="modal-schreiben" class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+    <div class="flex items-center justify-between px-6 py-5" style="border-bottom:1px solid #F3F4F6;">
+      <h2 class="text-lg font-semibold text-gray-900">Neues Schreiben</h2>
+      <button onclick="closeModal()" class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+    </div>
+    <div class="px-6 py-5 space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Titel *</label>
+        <input id="sc-titel" type="text" placeholder="z.B. Angebot Mai 2026" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Empfänger</label>
+        <input id="sc-empfaenger" type="text" placeholder="Kundenname" list="sc-emp-list" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
+        <datalist id="sc-emp-list"></datalist>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Datum</label>
+          <input id="sc-datum" type="date" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <select id="sc-status" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 bg-white">
+            <option value="ENTWURF">Entwurf</option>
+            <option value="GESENDET">Gesendet</option>
+            <option value="ARCHIVIERT">Archiviert</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="px-6 pb-5 flex gap-3">
+      <button onclick="closeModal()" class="flex-1 border border-gray-200 text-gray-700 rounded-xl py-2.5 text-sm font-medium hover:bg-gray-50">Abbrechen</button>
+      <button onclick="addSchreiben()" class="flex-1 text-white rounded-xl py-2.5 text-sm font-semibold" style="background:#3B5BDB;">Erstellen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Neues Profil -->
+<div id="modal-profil" class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
+    <div class="flex items-center justify-between px-6 py-5" style="border-bottom:1px solid #F3F4F6;">
+      <h2 class="text-lg font-semibold text-gray-900">Neues Profil</h2>
+      <button onclick="document.getElementById('modal-profil').classList.add('hidden')" class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+    </div>
+    <div class="px-6 py-5 space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+        <input id="p-name" type="text" placeholder="z.B. Maria Schmidt" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Rolle</label>
+        <select id="p-rolle" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 bg-white">
+          <option value="Mitarbeiter">Mitarbeiter</option>
+          <option value="Administrator">Administrator</option>
+          <option value="Buchhalter">Buchhalter</option>
+        </select>
+      </div>
+    </div>
+    <div class="px-6 pb-5 flex gap-3">
+      <button onclick="document.getElementById('modal-profil').classList.add('hidden')" class="flex-1 border border-gray-200 text-gray-700 rounded-xl py-2.5 text-sm font-medium hover:bg-gray-50">Abbrechen</button>
+      <button onclick="addProfil()" class="flex-1 text-white rounded-xl py-2.5 text-sm font-semibold" style="background:#3B5BDB;">Hinzufügen</button>
     </div>
   </div>
 </div>
