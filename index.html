@@ -288,7 +288,20 @@
         </div>
       </div>
       <div id="page-kunden" class="page">
-        <p class="text-gray-400">Kunden wird in Schritt 3 gebaut...</p>
+
+        <!-- Suchleiste -->
+        <div class="flex items-center gap-3 mb-5">
+          <div class="flex-1 relative">
+            <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/></svg>
+            <input id="kunden-search" type="text" placeholder="Kunden suchen…" oninput="filterKunden()" class="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 bg-white" style="focus:border-color:#3B5BDB;">
+          </div>
+        </div>
+
+        <!-- Kunden-Liste -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div id="kunden-list"></div>
+          <div id="kunden-empty" class="hidden px-5 py-10 text-center text-gray-400 text-sm">Keine Kunden gefunden.</div>
+        </div>
       </div>
       <div id="page-rechnungen" class="page">
         <p class="text-gray-400">Rechnungen wird in Schritt 4 gebaut...</p>
@@ -336,36 +349,98 @@
   };
 
   function showPage(name) {
-    // Hide all pages
+    currentPage = name;
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-
-    // Show selected page
     document.getElementById('page-' + name).classList.add('active');
-
-    // Set title
     document.getElementById('page-title').textContent = pageTitles[name];
-
-    // Set button
     const btn = document.getElementById('btn-neu');
     const label = btnLabels[name];
-    if (label) {
-      btn.style.display = 'flex';
-      document.getElementById('btn-neu-label').textContent = label;
-    } else {
-      btn.style.display = 'none';
-    }
-
-    // Mark active nav link
+    if (label) { btn.style.display = 'flex'; document.getElementById('btn-neu-label').textContent = label; }
+    else { btn.style.display = 'none'; }
     document.querySelectorAll('.nav-link').forEach(l => {
-      if (l.getAttribute('onclick') === `showPage('${name}')`) {
-        l.classList.add('active');
-      }
+      if (l.getAttribute('onclick') === `showPage('${name}')`) l.classList.add('active');
     });
+    if (name === 'kunden') filterKunden();
   }
 
+  // ── Daten ──────────────────────────────────────────
+  let kunden = JSON.parse(localStorage.getItem('kunden') || 'null') || [
+    { id:1, kuerzel:'LA', farbe:'#FED7AA', textfarbe:'#92400E', name:'La Fattoria',          firma:'La Fattoria GmbH',          email:'info@lafattoria.de',       telefon:'+49 6105 123456', ort:'Mörfelden-Walldorf', erstellt:'2026-03-01' },
+    { id:2, kuerzel:'TW', farbe:'#DDD6FE', textfarbe:'#5B21B6', name:'Techwave Solutions',   firma:'Techwave Solutions GmbH',   email:'kontakt@techwave.de',      telefon:'+49 69 987654',   ort:'Frankfurt am Main',  erstellt:'2026-02-15' },
+    { id:3, kuerzel:'IN', farbe:'#BFDBFE', textfarbe:'#1E40AF', name:'Infosys Limited',      firma:'Infosys Limited Germany',   email:'germany@infosys.com',      telefon:'+49 30 555000',   ort:'Berlin',             erstellt:'2026-01-20' },
+    { id:4, kuerzel:'MÜ', farbe:'#D1FAE5', textfarbe:'#065F46', name:'Müller & Partner',     firma:'Müller & Partner KG',       email:'office@mueller-partner.de',telefon:'+49 89 334455',   ort:'München',            erstellt:'2026-01-10' },
+    { id:5, kuerzel:'GT', farbe:'#FEE2E2', textfarbe:'#991B1B', name:'Global Tech',          firma:'Global Tech GmbH',          email:'info@globaltech.de',       telefon:'+49 40 778899',   ort:'Hamburg',            erstellt:'2025-12-05' },
+  ];
+
+  function saveKunden() { localStorage.setItem('kunden', JSON.stringify(kunden)); }
+
+  function renderKunden(list) {
+    const el = document.getElementById('kunden-list');
+    const empty = document.getElementById('kunden-empty');
+    if (!list.length) { el.innerHTML = ''; empty.classList.remove('hidden'); return; }
+    empty.classList.add('hidden');
+    el.innerHTML = list.map(k => `
+      <div class="flex items-center gap-4 px-5 py-4 hover:bg-gray-50 cursor-pointer" style="border-bottom:1px solid #F9FAFB;">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm flex-shrink-0"
+             style="background:${k.farbe};color:${k.textfarbe};">${k.kuerzel}</div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-semibold text-gray-900">${k.name}</p>
+          <p class="text-xs text-gray-400">${k.firma}</p>
+        </div>
+        <div class="hidden md:block text-xs text-gray-400 w-36 truncate">${k.ort}</div>
+        <div class="hidden md:block text-xs text-gray-400 w-40 truncate">${k.email}</div>
+        <div class="hidden md:block text-xs text-gray-400 w-32">${k.telefon}</div>
+        <button onclick="deleteKunde(${k.id})" class="ml-2 p-1.5 rounded-lg hover:bg-red-50 text-gray-300 hover:text-red-400 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        </button>
+      </div>`).join('');
+  }
+
+  function filterKunden() {
+    const q = document.getElementById('kunden-search').value.toLowerCase();
+    renderKunden(kunden.filter(k => k.name.toLowerCase().includes(q) || k.ort.toLowerCase().includes(q) || k.email.toLowerCase().includes(q)));
+  }
+
+  function deleteKunde(id) {
+    if (!confirm('Kunden wirklich löschen?')) return;
+    kunden = kunden.filter(k => k.id !== id);
+    saveKunden();
+    filterKunden();
+  }
+
+  function addKunde() {
+    const name     = document.getElementById('k-name').value.trim();
+    const firma    = document.getElementById('k-firma').value.trim();
+    const email    = document.getElementById('k-email').value.trim();
+    const telefon  = document.getElementById('k-telefon').value.trim();
+    const ort      = document.getElementById('k-ort').value.trim();
+    if (!name) { alert('Bitte Name eingeben.'); return; }
+    const colors = [
+      ['#FED7AA','#92400E'],['#DDD6FE','#5B21B6'],['#BFDBFE','#1E40AF'],
+      ['#D1FAE5','#065F46'],['#FEE2E2','#991B1B'],['#E0F2FE','#0C4A6E']
+    ];
+    const [farbe, textfarbe] = colors[kunden.length % colors.length];
+    const kuerzel = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+    kunden.unshift({ id: Date.now(), kuerzel, farbe, textfarbe, name, firma: firma||name, email, telefon, ort, erstellt: new Date().toISOString().slice(0,10) });
+    saveKunden();
+    closeModal();
+    showPage('kunden');
+  }
+
+  // ── Modal ───────────────────────────────────────────
+  let currentPage = 'dashboard';
+
   function openModal() {
-    alert('Modal kommt in den nächsten Schritten...');
+    if (currentPage === 'kunden') {
+      document.getElementById('modal-kunden').classList.remove('hidden');
+    } else {
+      document.getElementById('modal-rechnung').classList.remove('hidden');
+    }
+  }
+
+  function closeModal() {
+    document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
   }
 
   // Chart
@@ -392,5 +467,58 @@
     }
   });
 </script>
+<!-- Modal: Neuer Kunde -->
+<div id="modal-kunden" class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+    <div class="flex items-center justify-between px-6 py-5" style="border-bottom:1px solid #F3F4F6;">
+      <h2 class="text-lg font-semibold text-gray-900">Neuer Kunde</h2>
+      <button onclick="closeModal()" class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="px-6 py-5 space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+        <input id="k-name" type="text" placeholder="z.B. Max Mustermann" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Firma</label>
+        <input id="k-firma" type="text" placeholder="z.B. Mustermann GmbH" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">E-Mail</label>
+          <input id="k-email" type="email" placeholder="email@firma.de" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Telefon</label>
+          <input id="k-telefon" type="text" placeholder="+49 …" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Ort</label>
+        <input id="k-ort" type="text" placeholder="z.B. Berlin" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
+      </div>
+    </div>
+    <div class="px-6 pb-5 flex gap-3">
+      <button onclick="closeModal()" class="flex-1 border border-gray-200 text-gray-700 rounded-xl py-2.5 text-sm font-medium hover:bg-gray-50">Abbrechen</button>
+      <button onclick="addKunde()" class="flex-1 text-white rounded-xl py-2.5 text-sm font-semibold" style="background:#3B5BDB;">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Neue Rechnung (Platzhalter) -->
+<div id="modal-rechnung" class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+    <div class="flex items-center justify-between px-6 py-5" style="border-bottom:1px solid #F3F4F6;">
+      <h2 class="text-lg font-semibold text-gray-900">Neue Rechnung</h2>
+      <button onclick="closeModal()" class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="px-6 py-8 text-center text-gray-400 text-sm">Wird in Schritt 4 gebaut…</div>
+  </div>
+</div>
+
 </body>
 </html>
