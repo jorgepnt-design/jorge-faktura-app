@@ -304,7 +304,35 @@
         </div>
       </div>
       <div id="page-rechnungen" class="page">
-        <p class="text-gray-400">Rechnungen wird in Schritt 4 gebaut...</p>
+
+        <!-- Filter-Leiste -->
+        <div class="flex items-center gap-3 mb-5 flex-wrap">
+          <div class="flex-1 relative min-w-48">
+            <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/></svg>
+            <input id="re-search" type="text" placeholder="Rechnung suchen…" oninput="filterRechnungen()" class="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 bg-white">
+          </div>
+          <select id="re-filter" onchange="filterRechnungen()" class="border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2">
+            <option value="">Alle Status</option>
+            <option value="ENTWURF">Entwurf</option>
+            <option value="OFFEN">Offen</option>
+            <option value="BEZAHLT">Bezahlt</option>
+            <option value="ÜBERFÄLLIG">Überfällig</option>
+          </select>
+        </div>
+
+        <!-- Tabelle -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div class="hidden md:grid grid-cols-12 gap-2 px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider" style="border-bottom:1px solid #F3F4F6;">
+            <div class="col-span-3">Nummer</div>
+            <div class="col-span-3">Kunde</div>
+            <div class="col-span-2">Datum</div>
+            <div class="col-span-2 text-right">Betrag</div>
+            <div class="col-span-1 text-center">Status</div>
+            <div class="col-span-1"></div>
+          </div>
+          <div id="re-list"></div>
+          <div id="re-empty" class="hidden px-5 py-10 text-center text-gray-400 text-sm">Keine Rechnungen gefunden.</div>
+        </div>
       </div>
       <div id="page-lieferscheine" class="page">
         <p class="text-gray-400">Lieferscheine wird in Schritt 5 gebaut...</p>
@@ -362,6 +390,7 @@
       if (l.getAttribute('onclick') === `showPage('${name}')`) l.classList.add('active');
     });
     if (name === 'kunden') filterKunden();
+    if (name === 'rechnungen') filterRechnungen();
   }
 
   // ── Daten ──────────────────────────────────────────
@@ -374,6 +403,87 @@
   ];
 
   function saveKunden() { localStorage.setItem('kunden', JSON.stringify(kunden)); }
+
+  // ── Rechnungen ──────────────────────────────────────
+  const statusStyle = {
+    'ENTWURF':   'background:#FEF3C7;color:#92400E;',
+    'OFFEN':     'background:#DBEAFE;color:#1E40AF;',
+    'BEZAHLT':   'background:#D1FAE5;color:#065F46;',
+    'ÜBERFÄLLIG':'background:#FEE2E2;color:#991B1B;'
+  };
+
+  let rechnungen = JSON.parse(localStorage.getItem('rechnungen') || 'null') || [
+    { id:1, nummer:'RE-20260328-02', kunde:'Infosys Limited Germany', betrag:1000, datum:'2026-03-28', faellig:'2026-04-28', status:'ENTWURF',    profil:'Ana',   beschreibung:'Germany Claims' },
+    { id:2, nummer:'RE-20260315-01', kunde:'La Fattoria GmbH',        betrag:1000, datum:'2026-03-15', faellig:'2026-04-15', status:'BEZAHLT',    profil:'Ana',   beschreibung:'Beratungsleistung' },
+    { id:3, nummer:'RE-20260301-03', kunde:'Müller & Partner KG',     betrag:500,  datum:'2026-03-01', faellig:'2026-03-22', status:'ÜBERFÄLLIG', profil:'Jorge', beschreibung:'Projektphase 1' },
+    { id:4, nummer:'RE-20260220-04', kunde:'Techwave Solutions',       betrag:500,  datum:'2026-02-20', faellig:'2026-03-20', status:'BEZAHLT',    profil:'Jorge', beschreibung:'Softwareentwicklung' },
+  ];
+
+  function saveRechnungen() { localStorage.setItem('rechnungen', JSON.stringify(rechnungen)); }
+
+  function renderRechnungen(list) {
+    const el = document.getElementById('re-list');
+    const empty = document.getElementById('re-empty');
+    if (!list.length) { el.innerHTML = ''; empty.classList.remove('hidden'); return; }
+    empty.classList.add('hidden');
+    el.innerHTML = list.map(r => `
+      <div class="grid grid-cols-12 gap-2 items-center px-5 py-3.5 hover:bg-gray-50 cursor-pointer" style="border-bottom:1px solid #F9FAFB;">
+        <div class="col-span-12 md:col-span-3">
+          <p class="text-sm font-semibold text-gray-900">${r.nummer}</p>
+          <p class="text-xs text-gray-400 md:hidden">${r.kunde}</p>
+        </div>
+        <div class="hidden md:block col-span-3 text-sm text-gray-600 truncate">${r.kunde}</div>
+        <div class="hidden md:block col-span-2 text-xs text-gray-400">${r.datum}</div>
+        <div class="hidden md:block col-span-2 text-sm font-bold text-gray-900 text-right">${r.betrag.toLocaleString('de-DE')},00 €</div>
+        <div class="hidden md:flex col-span-1 justify-center">
+          <span class="text-xs px-2 py-0.5 rounded font-semibold whitespace-nowrap" style="${statusStyle[r.status]}">${r.status}</span>
+        </div>
+        <div class="hidden md:flex col-span-1 justify-end">
+          <button onclick="deleteRechnung(${r.id})" class="p-1.5 rounded-lg hover:bg-red-50 text-gray-300 hover:text-red-400 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          </button>
+        </div>
+      </div>`).join('');
+  }
+
+  function filterRechnungen() {
+    const q = (document.getElementById('re-search').value || '').toLowerCase();
+    const s = document.getElementById('re-filter').value;
+    renderRechnungen(rechnungen.filter(r =>
+      (!q || r.nummer.toLowerCase().includes(q) || r.kunde.toLowerCase().includes(q)) &&
+      (!s || r.status === s)
+    ));
+  }
+
+  function deleteRechnung(id) {
+    if (!confirm('Rechnung wirklich löschen?')) return;
+    rechnungen = rechnungen.filter(r => r.id !== id);
+    saveRechnungen();
+    filterRechnungen();
+  }
+
+  function nextRechnungNummer() {
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth()+1).padStart(2,'0');
+    const d = String(today.getDate()).padStart(2,'0');
+    const nr = rechnungen.length + 1;
+    return `RE-${y}${m}${d}-${String(nr).padStart(2,'0')}`;
+  }
+
+  function addRechnung() {
+    const kunde       = document.getElementById('r-kunde').value.trim();
+    const betrag      = parseFloat(document.getElementById('r-betrag').value.replace(',','.'));
+    const datum       = document.getElementById('r-datum').value;
+    const faellig     = document.getElementById('r-faellig').value;
+    const beschreibung= document.getElementById('r-beschreibung').value.trim();
+    const status      = document.getElementById('r-status').value;
+    if (!kunde || isNaN(betrag)) { alert('Bitte Kunde und Betrag eingeben.'); return; }
+    rechnungen.unshift({ id: Date.now(), nummer: nextRechnungNummer(), kunde, betrag, datum, faellig, status, profil: 'Jorge', beschreibung });
+    saveRechnungen();
+    closeModal();
+    showPage('rechnungen');
+  }
 
   function renderKunden(list) {
     const el = document.getElementById('kunden-list');
@@ -432,11 +542,19 @@
   let currentPage = 'dashboard';
 
   function openModal() {
-    if (currentPage === 'kunden') {
-      document.getElementById('modal-kunden').classList.remove('hidden');
-    } else {
-      document.getElementById('modal-rechnung').classList.remove('hidden');
+    const map = { kunden:'modal-kunden', rechnungen:'modal-rechnung', dashboard:'modal-rechnung' };
+    const id = map[currentPage] || null;
+    if (!id) return;
+    if (id === 'modal-rechnung') {
+      const today = new Date().toISOString().slice(0,10);
+      const faellig = new Date(Date.now()+30*86400000).toISOString().slice(0,10);
+      document.getElementById('r-datum').value = today;
+      document.getElementById('r-faellig').value = faellig;
+      // Kundenliste für Autocomplete
+      document.getElementById('r-kunde-list').innerHTML =
+        kunden.map(k => `<option value="${k.firma}">`).join('');
     }
+    document.getElementById(id).classList.remove('hidden');
   }
 
   function closeModal() {
@@ -507,7 +625,7 @@
   </div>
 </div>
 
-<!-- Modal: Neue Rechnung (Platzhalter) -->
+<!-- Modal: Neue Rechnung -->
 <div id="modal-rechnung" class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
   <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
     <div class="flex items-center justify-between px-6 py-5" style="border-bottom:1px solid #F3F4F6;">
@@ -516,7 +634,48 @@
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
     </div>
-    <div class="px-6 py-8 text-center text-gray-400 text-sm">Wird in Schritt 4 gebaut…</div>
+    <div class="px-6 py-5 space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Kunde *</label>
+        <input id="r-kunde" type="text" placeholder="Kundenname" list="r-kunde-list" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
+        <datalist id="r-kunde-list"></datalist>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Beschreibung</label>
+        <input id="r-beschreibung" type="text" placeholder="z.B. Beratungsleistung Mai 2026" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Betrag (Netto) *</label>
+          <div class="relative">
+            <input id="r-betrag" type="number" placeholder="0,00" class="w-full border border-gray-200 rounded-xl px-3 pr-7 py-2.5 text-sm focus:outline-none focus:ring-2">
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">€</span>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <select id="r-status" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 bg-white">
+            <option value="ENTWURF">Entwurf</option>
+            <option value="OFFEN">Offen</option>
+            <option value="BEZAHLT">Bezahlt</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Rechnungsdatum</label>
+          <input id="r-datum" type="date" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Fällig am</label>
+          <input id="r-faellig" type="date" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
+        </div>
+      </div>
+    </div>
+    <div class="px-6 pb-5 flex gap-3">
+      <button onclick="closeModal()" class="flex-1 border border-gray-200 text-gray-700 rounded-xl py-2.5 text-sm font-medium hover:bg-gray-50">Abbrechen</button>
+      <button onclick="addRechnung()" class="flex-1 text-white rounded-xl py-2.5 text-sm font-semibold" style="background:#3B5BDB;">Erstellen</button>
+    </div>
   </div>
 </div>
 
