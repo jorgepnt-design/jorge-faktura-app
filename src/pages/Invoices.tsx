@@ -17,7 +17,7 @@ import {
   formatCurrency, formatDate, getStatusColor, getStatusLabel,
   calculateLineItem, calculateInvoiceTotals, todayISO, generateId,
 } from '../utils/helpers';
-import { generateInvoicePDF, getInvoicePdfBlob } from '../utils/pdf';
+import { generateInvoicePDF, getInvoicePdfBlob, generateReceiptPDF, getReceiptPdfBlob } from '../utils/pdf';
 
 const VAT_RATES = [0, 7, 19] as const;
 const UNITS = ['Stk.', 'Std.', 'Tage', 'km', 'Pauschal', 'm²', 'Liter', 'kg'];
@@ -262,6 +262,23 @@ export default function Invoices() {
     setReceiptEditId(null);
   };
 
+  const handleReceiptPDF = (r: Receipt) => {
+    const profile = profiles.find((p) => p.id === r.profileId);
+    if (profile) generateReceiptPDF(r, profile);
+  };
+
+  const handleReceiptShare = (r: Receipt) => {
+    const profile = profiles.find((p) => p.id === r.profileId);
+    if (!profile) return;
+    const blob = getReceiptPdfBlob(r, profile);
+    const url = URL.createObjectURL(blob);
+    setShareBlobUrl(url);
+    setShareFilename(`Quittung-${r.receiptNumber}.pdf`);
+    setShareSubject(`Quittung ${r.receiptNumber}`);
+    setShareBody(`Sehr geehrte Damen und Herren,\n\nanbei finden Sie die Quittung ${r.receiptNumber} über ${formatCurrency(r.amount)}.\n\nMit freundlichen Grüßen\n${profile.personName || profile.companyName}`);
+    setShareEmail('');
+  };
+
   const profileName = (id: string) => profiles.find((p) => p.id === id)?.internalName || '-';
   const customerName = (id: string) => customers.find((c) => c.id === id)?.companyName || '-';
 
@@ -398,6 +415,12 @@ export default function Invoices() {
                     <div className="flex gap-2 mt-3 pt-3 border-t border-slate-50">
                       <button onClick={() => handleEditReceipt(r)} className="flex items-center gap-1.5 text-xs text-brand-500 hover:text-brand-700">
                         <Edit2 className="w-3.5 h-3.5" /> Bearbeiten
+                      </button>
+                      <button onClick={() => handleReceiptPDF(r)} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700">
+                        <Download className="w-3.5 h-3.5" /> PDF
+                      </button>
+                      <button onClick={() => handleReceiptShare(r)} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-green-600">
+                        <Share2 className="w-3.5 h-3.5" /> Teilen
                       </button>
                       <button onClick={() => setDeleteReceiptId(r.id)} className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 ml-auto">
                         <Trash2 className="w-3.5 h-3.5" /> Löschen
@@ -691,7 +714,7 @@ export default function Invoices() {
       />
 
       {/* Share modal */}
-      <Modal isOpen={!!shareBlobUrl} onClose={closeShare} title="Rechnung teilen" size="sm"
+      <Modal isOpen={!!shareBlobUrl} onClose={closeShare} title={shareSubject ? `Teilen: ${shareSubject}` : 'Teilen'} size="sm"
         footer={<Button variant="secondary" fullWidth onClick={closeShare}>Schließen</Button>}
       >
         <div className="space-y-3">
