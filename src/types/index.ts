@@ -113,6 +113,11 @@ export interface DeliveryNoteItem {
   description: string;
   quantity: number;
   unit: string;
+  netUnitPrice: number;
+  vatRate: 0 | 7 | 19;
+  netTotal: number;
+  vatTotal: number;
+  grossTotal: number;
   notes: string;
 }
 
@@ -129,6 +134,9 @@ export interface DeliveryNote {
   noteText: string;
   paymentText: string;
   items: DeliveryNoteItem[];
+  netTotal: number;
+  vatTotals: { rate: number; amount: number }[];
+  grossTotal: number;
   createdAt: string;
   updatedAt: string;
 }

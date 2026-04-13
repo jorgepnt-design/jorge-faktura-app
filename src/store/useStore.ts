@@ -367,6 +367,21 @@ export const useStore = create<AppState>()(
           state.profiles = state.profiles.map((p) =>
             p.pin ? p : { ...p, pin: '1234' }
           );
+          // Migrate delivery notes: add price/VAT fields if missing
+          state.deliveryNotes = state.deliveryNotes.map((n) => ({
+            netTotal: 0,
+            vatTotals: [],
+            grossTotal: 0,
+            ...n,
+            items: n.items.map((item) => ({
+              netUnitPrice: 0,
+              vatRate: 19 as const,
+              netTotal: 0,
+              vatTotal: 0,
+              grossTotal: 0,
+              ...item,
+            })),
+          }));
           // Always start logged out after page reload
           state.loggedInProfileId = null;
         }

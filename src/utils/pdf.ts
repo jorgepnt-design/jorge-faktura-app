@@ -363,12 +363,8 @@ export function generateDeliveryNotePDF(
   let y = drawBrandHeader(doc, profile);
 
   const sectionY = y;
-
   drawMetaBox(doc, 'Lieferschein', note.deliveryNoteNumber, note.deliveryDate, [], sectionY);
-
-  if (customer) {
-    drawAddressBlock(doc, profile, customer, sectionY);
-  }
+  if (customer) drawAddressBlock(doc, profile, customer, sectionY);
 
   y = sectionY + 42;
 
@@ -382,45 +378,96 @@ export function generateDeliveryNotePDF(
     y += lines.length * 4.5 + 8;
   }
 
+  // Determine if any item has a price (to decide which columns to show)
+  const hasPrices = note.items.some((item) => (item.netUnitPrice ?? 0) > 0);
+
   // Items table
-  const tableBody = note.items.map((item, idx) => [
-    String(idx + 1),
-    item.description,
-    item.quantity.toString(),
-    item.unit,
-    item.notes || '',
-  ]);
+  if (hasPrices) {
+    const tableBody = note.items.map((item, idx) => [
+      String(idx + 1),
+      item.description + (item.notes ? `\n${item.notes}` : ''),
+      item.quantity.toString(),
+      item.unit,
+      formatCurrency(item.netUnitPrice ?? 0),
+      `${item.vatRate ?? 0} %`,
+      formatCurrency(item.netTotal ?? 0),
+    ]);
 
-  autoTable(doc, {
-    startY: y,
-    head: [['#', 'Artikel / Beschreibung', 'Menge', 'Einheit', 'Bemerkung']],
-    body: tableBody,
-    theme: 'plain',
-    headStyles: {
-      fillColor: PRIMARY,
-      textColor: WHITE,
-      fontStyle: 'bold',
-      fontSize: 8.5,
-      cellPadding: { top: 4, bottom: 4, left: 3, right: 3 },
-    },
-    alternateRowStyles: { fillColor: SLATE_100 },
-    bodyStyles: {
-      fontSize: 8.5,
-      cellPadding: { top: 3, bottom: 3, left: 3, right: 3 },
-      textColor: SLATE_700,
-    },
-    columnStyles: {
-      0: { cellWidth: 10, halign: 'center' },
-      2: { cellWidth: 20, halign: 'right' },
-      3: { cellWidth: 22 },
-      4: { cellWidth: 42 },
-    },
-    margin: { left: ML, right: MR },
-    tableLineColor: SLATE_300,
-    tableLineWidth: 0.2,
-  });
+    autoTable(doc, {
+      startY: y,
+      head: [['#', 'Artikel / Beschreibung', 'Menge', 'Einheit', 'Einzelpreis', 'MwSt.', 'Nettobetrag']],
+      body: tableBody,
+      theme: 'plain',
+      headStyles: {
+        fillColor: PRIMARY,
+        textColor: WHITE,
+        fontStyle: 'bold',
+        fontSize: 8.5,
+        cellPadding: { top: 4, bottom: 4, left: 3, right: 3 },
+      },
+      alternateRowStyles: { fillColor: SLATE_100 },
+      bodyStyles: {
+        fontSize: 8.5,
+        cellPadding: { top: 3, bottom: 3, left: 3, right: 3 },
+        textColor: SLATE_700,
+      },
+      columnStyles: {
+        0: { cellWidth: 8,  halign: 'center' },
+        2: { cellWidth: 16, halign: 'right' },
+        3: { cellWidth: 18 },
+        4: { cellWidth: 28, halign: 'right' },
+        5: { cellWidth: 16, halign: 'center' },
+        6: { cellWidth: 28, halign: 'right' },
+      },
+      margin: { left: ML, right: MR },
+      tableLineColor: SLATE_300,
+      tableLineWidth: 0.2,
+    });
+  } else {
+    // Simple table without price columns
+    const tableBody = note.items.map((item, idx) => [
+      String(idx + 1),
+      item.description,
+      item.quantity.toString(),
+      item.unit,
+      item.notes || '',
+    ]);
 
-  y = (doc as any).lastAutoTable.finalY + 10;
+    autoTable(doc, {
+      startY: y,
+      head: [['#', 'Artikel / Beschreibung', 'Menge', 'Einheit', 'Bemerkung']],
+      body: tableBody,
+      theme: 'plain',
+      headStyles: {
+        fillColor: PRIMARY,
+        textColor: WHITE,
+        fontStyle: 'bold',
+        fontSize: 8.5,
+        cellPadding: { top: 4, bottom: 4, left: 3, right: 3 },
+      },
+      alternateRowStyles: { fillColor: SLATE_100 },
+      bodyStyles: {
+        fontSize: 8.5,
+        cellPadding: { top: 3, bottom: 3, left: 3, right: 3 },
+        textColor: SLATE_700,
+      },
+      columnStyles: {
+        0: { cellWidth: 10, halign: 'center' },
+        2: { cellWidth: 20, halign: 'right' },
+        3: { cellWidth: 22 },
+      },
+      margin: { left: ML, right: MR },
+      tableLineColor: SLATE_300,
+      tableLineWidth: 0.2,
+    });
+  }
+
+  y = (doc as any).lastAutoTable.finalY + 8;
+
+  // Totals (only when prices are set)
+  if (hasPrices) {
+    y = drawTotals(doc, note.netTotal ?? 0, note.vatTotals ?? [], note.grossTotal ?? 0, y);
+  }
 
   // Note text box
   if (note.noteText) {

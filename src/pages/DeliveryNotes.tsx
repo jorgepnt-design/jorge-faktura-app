@@ -12,11 +12,17 @@ import { FormField, Input, Textarea, Select } from '../components/common/FormFie
 import TemplateTextSelector from '../components/templates/TemplateTextSelector';
 import { DeliveryNote, DeliveryNoteItem, DeliveryNoteStatus } from '../types';
 import {
-  formatDate, getStatusColor, getStatusLabel, generateId, todayISO,
+  formatCurrency, formatDate, getStatusColor, getStatusLabel,
+  generateId, todayISO, calculateLineItem, calculateInvoiceTotals,
 } from '../utils/helpers';
 import { generateDeliveryNotePDF } from '../utils/pdf';
 
 const UNITS = ['Stk.', 'Karton', 'Palette', 'kg', 'Liter', 'm', 'm²', 'Pauschal'];
+const VAT_RATES: { value: 0 | 7 | 19; label: string }[] = [
+  { value: 0, label: '0 %' },
+  { value: 7, label: '7 %' },
+  { value: 19, label: '19 %' },
+];
 const STATUSES: { value: DeliveryNoteStatus; label: string }[] = [
   { value: 'draft', label: 'Entwurf' },
   { value: 'sent', label: 'Gesendet' },
@@ -35,6 +41,9 @@ function emptyForm(profileId: string): DNFormData {
     noteText: '',
     paymentText: '',
     items: [],
+    netTotal: 0,
+    vatTotals: [],
+    grossTotal: 0,
   };
 }
 
@@ -45,8 +54,17 @@ function emptyItem(): DeliveryNoteItem {
     description: '',
     quantity: 1,
     unit: 'Stk.',
+    netUnitPrice: 0,
+    vatRate: 19,
+    netTotal: 0,
+    vatTotal: 0,
+    grossTotal: 0,
     notes: '',
   };
+}
+
+function recalcTotals(items: DeliveryNoteItem[]): Pick<DNFormData, 'netTotal' | 'vatTotals' | 'grossTotal'> {
+  return calculateInvoiceTotals(items);
 }
 
 export default function DeliveryNotes() {
@@ -89,7 +107,20 @@ export default function DeliveryNotes() {
     if (note) {
       setEditingId(note.id);
       const { id, createdAt, updatedAt, deliveryNoteNumber, ...rest } = note;
-      setForm(rest);
+      setForm({
+        ...rest,
+        netTotal: rest.netTotal ?? 0,
+        vatTotals: rest.vatTotals ?? [],
+        grossTotal: rest.grossTotal ?? 0,
+        items: rest.items.map((item) => ({
+          netUnitPrice: 0,
+          vatRate: 19 as const,
+          netTotal: 0,
+          vatTotal: 0,
+          grossTotal: 0,
+          ...item,
+        })),
+      });
     } else {
       setEditingId(null);
       setForm(emptyForm(loggedInProfileId || ''));
@@ -97,26 +128,42 @@ export default function DeliveryNotes() {
     setShowForm(true);
   };
 
-  const addItem = () => setForm((f) => ({ ...f, items: [...f.items, emptyItem()] }));
+  const addItem = () => {
+    const item = emptyItem();
+    setForm((f) => {
+      const items = [...f.items, item];
+      return { ...f, items, ...recalcTotals(items) };
+    });
+  };
 
-  const removeItem = (idx: number) =>
-    setForm((f) => ({ ...f, items: f.items.filter((_, i) => i !== idx) }));
+  const removeItem = (idx: number) => {
+    setForm((f) => {
+      const items = f.items.filter((_, i) => i !== idx);
+      return { ...f, items, ...recalcTotals(items) };
+    });
+  };
 
   const updateItem = (idx: number, changes: Partial<DeliveryNoteItem>) => {
     setForm((f) => {
       const items = [...f.items];
-      items[idx] = { ...items[idx], ...changes };
-      return { ...f, items };
+      const merged = { ...items[idx], ...changes };
+      const calc = calculateLineItem(merged.quantity, merged.netUnitPrice, merged.vatRate);
+      items[idx] = { ...merged, ...calc };
+      return { ...f, items, ...recalcTotals(items) };
     });
   };
 
   const selectArticle = (idx: number, articleId: string) => {
     const article = profileArticles.find((a) => a.id === articleId);
     if (!article) return;
+    const calc = calculateLineItem(form.items[idx]?.quantity ?? 1, article.netPrice, article.vatRate);
     updateItem(idx, {
       articleId,
       description: article.name,
       unit: article.unit,
+      netUnitPrice: article.netPrice,
+      vatRate: article.vatRate,
+      ...calc,
     });
   };
 
@@ -326,7 +373,9 @@ export default function DeliveryNotes() {
                         >
                           <option value="">Artikel aus Bibliothek wählen...</option>
                           {profileArticles.map((a) => (
-                            <option key={a.id} value={a.id}>{a.name}</option>
+                            <option key={a.id} value={a.id}>
+                              {a.name} – {a.netPrice.toFixed(2)} € / {a.unit} ({a.vatRate}% MwSt.)
+                            </option>
                           ))}
                         </Select>
                       </div>
@@ -340,7 +389,7 @@ export default function DeliveryNotes() {
                       />
                     </FormField>
 
-                    <div className="grid grid-cols-3 gap-3 mt-3">
+                    <div className="grid grid-cols-2 gap-3 mt-3">
                       <FormField label="Menge">
                         <Input
                           type="number"
@@ -358,6 +407,28 @@ export default function DeliveryNotes() {
                           {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
                         </Select>
                       </FormField>
+                      <FormField label="Einzelpreis (Netto)">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={item.netUnitPrice}
+                          onChange={(e) => updateItem(idx, { netUnitPrice: parseFloat(e.target.value) || 0 })}
+                        />
+                      </FormField>
+                      <FormField label="MwSt.">
+                        <Select
+                          value={item.vatRate}
+                          onChange={(e) => updateItem(idx, { vatRate: parseInt(e.target.value) as 0 | 7 | 19 })}
+                        >
+                          {VAT_RATES.map((r) => (
+                            <option key={r.value} value={r.value}>{r.label}</option>
+                          ))}
+                        </Select>
+                      </FormField>
+                    </div>
+
+                    <div className="mt-3">
                       <FormField label="Bemerkung">
                         <Input
                           value={item.notes}
@@ -366,11 +437,44 @@ export default function DeliveryNotes() {
                         />
                       </FormField>
                     </div>
+
+                    <div className="flex justify-end mt-2">
+                      <span className="text-sm font-medium text-slate-700">
+                        Netto: <span className="text-brand-600">{formatCurrency(item.netTotal)}</span>
+                        {item.vatRate > 0 && (
+                          <span className="text-slate-400 ml-2 font-normal text-xs">
+                            (inkl. MwSt.: {formatCurrency(item.grossTotal)})
+                          </span>
+                        )}
+                      </span>
+                    </div>
                   </div>
                 ))}
                 <Button size="sm" variant="secondary" icon={<Plus className="w-3 h-3" />} onClick={addItem} fullWidth>
                   Weiterer Artikel
                 </Button>
+              </div>
+            )}
+
+            {/* Totals summary */}
+            {form.items.length > 0 && (
+              <div className="mt-4 bg-white rounded-xl border border-slate-200 p-4">
+                <div className="space-y-1.5 text-sm">
+                  <div className="flex justify-between text-slate-600">
+                    <span>Nettobetrag</span>
+                    <span>{formatCurrency(form.netTotal)}</span>
+                  </div>
+                  {form.vatTotals.map((vt) => (
+                    <div key={vt.rate} className="flex justify-between text-slate-600">
+                      <span>MwSt. {vt.rate}%</span>
+                      <span>{formatCurrency(vt.amount)}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between font-semibold text-slate-900 pt-2 border-t border-slate-200">
+                    <span>Gesamtbetrag</span>
+                    <span className="text-brand-600">{formatCurrency(form.grossTotal)}</span>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -455,7 +559,12 @@ function DNCard({ note, customerName, profileName, onEdit, onDelete, onPDF }: DN
           </div>
           <div className="flex items-center justify-between mt-2">
             <span className="text-xs text-slate-400">{formatDate(note.deliveryDate)}</span>
-            <span className="text-xs text-slate-400">{note.items.length} Artikel</span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-slate-400">{note.items.length} Artikel</span>
+              {(note.grossTotal ?? 0) > 0 && (
+                <span className="text-xs font-semibold text-brand-600">{formatCurrency(note.grossTotal)}</span>
+              )}
+            </div>
           </div>
         </div>
       </div>
