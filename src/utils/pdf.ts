@@ -289,13 +289,13 @@ function drawSignature(doc: jsPDF, profile: Profile, y: number): number {
     const imgType = profile.signature.startsWith('data:image/png') ? 'PNG' : 'JPEG';
     // Draw signature image (max 60mm wide, 20mm tall)
     doc.addImage(profile.signature, imgType, ML, y, 60, 20);
-    text(doc, SLATE_500);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.text(profile.personName || profile.companyName || '', ML, y + 24);
     draw(doc, SLATE_300);
     doc.setLineWidth(0.3);
     doc.line(ML, y + 22, ML + 60, y + 22);
+    text(doc, SLATE_500);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text(profile.personName || profile.companyName || '', ML, y + 28);
   } catch { /* skip if image invalid */ }
   return y + 28;
 }
