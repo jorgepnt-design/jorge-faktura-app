@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Background -->
+  <rect width="200" height="200" rx="44" ry="44" fill="url(#bgGrad)"/>
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e3a8a"/>
+      <stop offset="100%" style="stop-color:#172554"/>
+    </linearGradient>
+    <linearGradient id="arrowGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#93c5fd;stop-opacity:0.6"/>
+      <stop offset="100%" style="stop-color:#bfdbfe;stop-opacity:1"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Document shape -->
+  <rect x="52" y="28" width="72" height="90" rx="7" ry="7" fill="none" stroke="white" stroke-width="5"/>
+  <!-- Folded corner -->
+  <polyline points="100,28 124,52" fill="none" stroke="white" stroke-width="5" stroke-linecap="round"/>
+  <polyline points="100,28 100,52 124,52" fill="none" stroke="white" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+
+  <!-- € symbol on document -->
+  <text x="88" y="74" font-family="Arial, sans-serif" font-size="26" font-weight="bold" fill="white" text-anchor="middle">€</text>
+
+  <!-- Lines on document -->
+  <line x1="63" y1="86" x2="113" y2="86" stroke="white" stroke-width="4" stroke-linecap="round" opacity="0.7"/>
+  <line x1="63" y1="97" x2="100" y2="97" stroke="white" stroke-width="4" stroke-linecap="round" opacity="0.7"/>
+
+  <!-- Chart / arrow overlay -->
+  <polyline points="48,148 75,128 95,138 118,108" fill="none" stroke="url(#arrowGrad)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Arrow head -->
+  <polyline points="104,100 118,108 110,122" fill="none" stroke="url(#arrowGrad)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- JORGE FAKTURA text -->
+  <text x="100" y="164" font-family="Arial Black, Arial, sans-serif" font-size="22" font-weight="900" fill="white" text-anchor="middle" letter-spacing="1">JORGE</text>
+  <text x="100" y="188" font-family="Arial Black, Arial, sans-serif" font-size="22" font-weight="900" fill="white" text-anchor="middle" letter-spacing="1">FAKTURA</text>
+</svg>

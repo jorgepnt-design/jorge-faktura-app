@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, PenLine, MoreVertical, Edit2, Trash2, Download } from 'lucide-react';
+import { Plus, Search, PenLine, MoreVertical, Edit2, Trash2, Download, Share2, Mail, MessageCircle } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
@@ -8,8 +8,8 @@ import EmptyState from '../components/common/EmptyState';
 import { FormField, Input, Textarea, Select } from '../components/common/FormField';
 import TemplateTextSelector from '../components/templates/TemplateTextSelector';
 import { Letter } from '../types';
-import { formatDate, todayISO } from '../utils/helpers';
-import jsPDF from 'jspdf';
+import { formatDate, formatCurrency, todayISO } from '../utils/helpers';
+import { generateLetterPDF, getLetterPdfBlob } from '../utils/pdf';
 
 type LetterFormData = Omit<Letter, 'id' | 'createdAt' | 'updatedAt'>;
 
@@ -17,6 +17,7 @@ function emptyForm(profileId: string): LetterFormData {
   return {
     profileId,
     customerId: null,
+    language: 'de',
     title: '',
     content: '',
     templateId: null,
@@ -26,7 +27,7 @@ function emptyForm(profileId: string): LetterFormData {
 
 export default function Letters() {
   const {
-    profiles, activeProfileId, customers, letters, templates,
+    profiles, loggedInProfileId, customers, letters, templates,
     addLetter, updateLetter, deleteLetter,
   } = useStore();
 
@@ -34,7 +35,12 @@ export default function Letters() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [form, setForm] = useState<LetterFormData>(emptyForm(activeProfileId || ''));
+  const [form, setForm] = useState<LetterFormData>(emptyForm(loggedInProfileId || ''));
+  const [shareBlobUrl, setShareBlobUrl] = useState<string | null>(null);
+  const [shareFilename, setShareFilename] = useState('');
+  const [shareSubject, setShareSubject] = useState('');
+  const [shareBody, setShareBody] = useState('');
+  const [shareEmail, setShareEmail] = useState('');
 
   const profileCustomers = useMemo(
     () => customers.filter((c) => c.profileId === form.profileId),
@@ -48,10 +54,11 @@ export default function Letters() {
 
   const filtered = useMemo(() => {
     return letters.filter((l) => {
+      if (l.profileId !== loggedInProfileId) return false;
       const q = search.toLowerCase();
       return !search || l.title.toLowerCase().includes(q) || l.content.toLowerCase().includes(q);
     });
-  }, [letters, search]);
+  }, [letters, search, loggedInProfileId]);
 
   const openForm = (letter?: Letter) => {
     if (letter) {
@@ -60,7 +67,7 @@ export default function Letters() {
       setForm(rest);
     } else {
       setEditingId(null);
-      setForm(emptyForm(activeProfileId || ''));
+      setForm(emptyForm(loggedInProfileId || ''));
     }
     setShowForm(true);
   };
@@ -82,60 +89,25 @@ export default function Letters() {
 
   const handlePDF = (letter: Letter) => {
     const profile = profiles.find((p) => p.id === letter.profileId);
-    const customer = letter.customerId
-      ? customers.find((c) => c.id === letter.customerId)
-      : null;
-
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    const pageW = doc.internal.pageSize.getWidth();
-    let y = 20;
-
-    if (profile?.logo) {
-      try {
-        const imgType = profile.logo.startsWith('data:image/png') ? 'PNG' : 'JPEG';
-        doc.addImage(profile.logo, imgType, 14, y, 40, 16);
-      } catch { /* skip */ }
-    }
-
-    doc.setFontSize(8);
-    doc.setTextColor(100);
-    const senderLines = [
-      profile?.companyName || '',
-      profile?.address || '',
-      `${profile?.zipCode || ''} ${profile?.city || ''}`.trim(),
-    ].filter(Boolean);
-    senderLines.forEach((line, i) => doc.text(line, pageW - 14, y + 4 + i * 4, { align: 'right' }));
-
-    y += 30;
-
-    if (customer) {
-      doc.setFontSize(10);
-      doc.setTextColor(60);
-      [customer.companyName, customer.contactPerson, customer.address,
-        `${customer.zipCode} ${customer.city}`].filter(Boolean).forEach((line, i) => {
-        doc.text(line, 14, y + i * 5);
-      });
-      y += 25;
-    }
-
-    doc.setFontSize(8);
-    doc.setTextColor(130);
-    doc.text(formatDate(letter.letterDate), pageW - 14, y, { align: 'right' });
-
-    doc.setFontSize(14);
-    doc.setTextColor(30);
-    doc.setFont('helvetica', 'bold');
-    doc.text(letter.title, 14, y + 10);
-    y += 20;
-
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(50);
-    const lines = doc.splitTextToSize(letter.content, 182);
-    doc.text(lines, 14, y);
-
-    doc.save(`${letter.title || 'Schreiben'}.pdf`);
+    if (!profile) return;
+    const customer = letter.customerId ? customers.find((c) => c.id === letter.customerId) ?? null : null;
+    generateLetterPDF(letter, profile, customer);
   };
+
+  const handleShare = (letter: Letter) => {
+    const profile = profiles.find((p) => p.id === letter.profileId);
+    if (!profile) return;
+    const customer = letter.customerId ? customers.find((c) => c.id === letter.customerId) ?? null : null;
+    const blob = getLetterPdfBlob(letter, profile, customer);
+    const url = URL.createObjectURL(blob);
+    setShareBlobUrl(url);
+    setShareFilename(`${letter.title || 'Schreiben'}.pdf`);
+    setShareSubject(letter.title || 'Schreiben');
+    setShareBody(`Anbei finden Sie das Schreiben: ${letter.title}\n\nMit freundlichen Grüßen\n${profile.personName || profile.companyName}`);
+    setShareEmail(customer?.email || '');
+  };
+
+  const closeShare = () => { if (shareBlobUrl) URL.revokeObjectURL(shareBlobUrl); setShareBlobUrl(null); };
 
   const profileName = (id: string) => profiles.find((p) => p.id === id)?.internalName || '-';
   const customerName = (id: string | null) =>
@@ -182,6 +154,7 @@ export default function Letters() {
               onEdit={() => openForm(letter)}
               onDelete={() => setDeleteId(letter.id)}
               onPDF={() => handlePDF(letter)}
+              onShare={() => handleShare(letter)}
             />
           ))}
         </div>
@@ -236,6 +209,16 @@ export default function Letters() {
               />
             </FormField>
 
+            <FormField label="Sprache / Language">
+              <Select
+                value={form.language}
+                onChange={(e) => setForm({ ...form, language: e.target.value as 'de' | 'en' })}
+              >
+                <option value="de">Deutsch</option>
+                <option value="en">English</option>
+              </Select>
+            </FormField>
+
             <FormField label="Betreff" required>
               <Input
                 value={form.title}
@@ -277,6 +260,31 @@ export default function Letters() {
         title="Schreiben löschen"
         message="Möchten Sie dieses Schreiben wirklich löschen?"
       />
+
+      {/* Share modal */}
+      <Modal isOpen={!!shareBlobUrl} onClose={closeShare} title="Schreiben teilen" size="sm"
+        footer={<Button variant="secondary" fullWidth onClick={closeShare}>Schließen</Button>}>
+        <div className="space-y-3">
+          <button onClick={() => { const a = document.createElement('a'); a.href = shareBlobUrl!; a.download = shareFilename; a.click(); }}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-brand-600 text-white font-medium hover:bg-brand-700 transition-colors">
+            <Download className="w-5 h-5" /> PDF herunterladen
+          </button>
+          <div className="space-y-2">
+            <input type="email" value={shareEmail} onChange={(e) => setShareEmail(e.target.value)}
+              placeholder="Empfänger E-Mail (optional)"
+              className="w-full h-10 px-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            <button onClick={() => window.location.href = `mailto:${shareEmail}?subject=${encodeURIComponent(shareSubject)}&body=${encodeURIComponent(shareBody)}`}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition-colors">
+              <Mail className="w-5 h-5 text-blue-500" /> Per E-Mail senden
+            </button>
+          </div>
+          <button onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(shareSubject + '\n\n' + shareBody)}`, '_blank')}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition-colors">
+            <MessageCircle className="w-5 h-5 text-green-500" /> Per WhatsApp teilen
+          </button>
+          <p className="text-xs text-slate-400 text-center">PDF herunterladen, dann in WhatsApp/E-Mail anhängen</p>
+        </div>
+      </Modal>
     </div>
   );
 }
@@ -288,9 +296,10 @@ interface LetterCardProps {
   onEdit: () => void;
   onDelete: () => void;
   onPDF: () => void;
+  onShare: () => void;
 }
 
-function LetterCard({ letter, profileName, customerName, onEdit, onDelete, onPDF }: LetterCardProps) {
+function LetterCard({ letter, profileName, customerName, onEdit, onDelete, onPDF, onShare }: LetterCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -322,7 +331,10 @@ function LetterCard({ letter, profileName, customerName, onEdit, onDelete, onPDF
                       <Edit2 className="w-4 h-4" /> Bearbeiten
                     </button>
                     <button onClick={() => { onPDF(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                      <Download className="w-4 h-4" /> PDF
+                      <Download className="w-4 h-4" /> PDF exportieren
+                    </button>
+                    <button onClick={() => { onShare(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                      <Share2 className="w-4 h-4" /> Teilen
                     </button>
                     <div className="my-1 border-t border-slate-100" />
                     <button onClick={() => { onDelete(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50">

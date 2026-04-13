@@ -9,13 +9,13 @@ import NewInvoiceModal from '../components/invoice/NewInvoiceModal';
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { activeProfileId, customers, invoices, deliveryNotes, letters } = useStore();
+  const { loggedInProfileId, customers, invoices, deliveryNotes, letters } = useStore();
   const [showNewInvoice, setShowNewInvoice] = useState(false);
 
-  const profileInvoices = invoices.filter((i) => i.profileId === activeProfileId);
-  const profileCustomers = customers.filter((c) => c.profileId === activeProfileId);
-  const profileDeliveryNotes = deliveryNotes.filter((n) => n.profileId === activeProfileId);
-  const profileLetters = letters.filter((l) => l.profileId === activeProfileId);
+  const profileInvoices = invoices.filter((i) => i.profileId === loggedInProfileId);
+  const profileCustomers = customers.filter((c) => c.profileId === loggedInProfileId);
+  const profileDeliveryNotes = deliveryNotes.filter((n) => n.profileId === loggedInProfileId);
+  const profileLetters = letters.filter((l) => l.profileId === loggedInProfileId);
 
   const totalRevenue = profileInvoices
     .filter((i) => i.status === 'paid')

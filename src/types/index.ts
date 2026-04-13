@@ -1,6 +1,7 @@
 export interface Profile {
   id: string;
   internalName: string;
+  pin: string;
   companyName: string;
   personName: string;
   address: string;
@@ -18,9 +19,14 @@ export interface Profile {
   bic: string;
   paymentTerms: string;
   logo: string | null;
+  signature: string | null;
+  signatureOnInvoice: boolean;
+  signatureOnDeliveryNote: boolean;
+  signatureOnLetter: boolean;
   pdfFooter: string;
   invoiceCounter: number;
   deliveryNoteCounter: number;
+  receiptCounter: number;
   createdAt: string;
 }
 
@@ -112,6 +118,11 @@ export interface DeliveryNoteItem {
   description: string;
   quantity: number;
   unit: string;
+  netUnitPrice: number;
+  vatRate: 0 | 7 | 19;
+  netTotal: number;
+  vatTotal: number;
+  grossTotal: number;
   notes: string;
 }
 
@@ -128,6 +139,9 @@ export interface DeliveryNote {
   noteText: string;
   paymentText: string;
   items: DeliveryNoteItem[];
+  netTotal: number;
+  vatTotals: { rate: number; amount: number }[];
+  grossTotal: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -136,6 +150,7 @@ export interface Letter {
   id: string;
   profileId: string;
   customerId: string | null;
+  language: 'de' | 'en';
   title: string;
   content: string;
   templateId: string | null;
@@ -148,4 +163,31 @@ export interface AppSettings {
   pin: string;
   currency: string;
   dateFormat: string;
+}
+
+export type PaymentMethod = 'bar' | 'überweisung' | 'karte' | 'sonstige';
+
+export interface Receipt {
+  id: string;
+  profileId: string;
+  invoiceId: string | null;
+  receiptNumber: string;
+  date: string;
+  amount: number;
+  payerName: string;
+  purpose: string;
+  paymentMethod: PaymentMethod;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Attachment {
+  id: string;
+  profileId: string;
+  name: string;
+  mimeType: string;
+  size: number;
+  data: string;
+  createdAt: string;
 }

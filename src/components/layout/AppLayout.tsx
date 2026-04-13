@@ -4,8 +4,9 @@ import Header from './Header';
 import BottomNav from './BottomNav';
 import Sidebar from './Sidebar';
 import {
-  LayoutDashboard, Users, FileText, Truck, PenLine, LayoutTemplate, Settings
+  LayoutDashboard, Users, FileText, Truck, PenLine, LayoutTemplate, Settings, LogOut
 } from 'lucide-react';
+import { useStore } from '../../store/useStore';
 
 const routeTitles: Record<string, string> = {
   '/': 'Dashboard',
@@ -29,6 +30,7 @@ const desktopNav = [
 
 export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { logout } = useStore();
   const location = useLocation();
 
   const pageTitle = Object.entries(routeTitles).find(
@@ -64,6 +66,15 @@ export default function AppLayout() {
             </NavLink>
           ))}
         </nav>
+        <div className="p-3 border-t border-slate-100">
+          <button
+            onClick={() => logout()}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+          >
+            <LogOut className="w-5 h-5" />
+            Abmelden
+          </button>
+        </div>
       </aside>
 
       {/* Mobile Header */}
