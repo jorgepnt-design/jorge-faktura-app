@@ -295,9 +295,9 @@ function drawSignature(doc: jsPDF, profile: Profile, y: number): number {
     text(doc, SLATE_500);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
-    doc.text(profile.personName || profile.companyName || '', ML, y + 34);
+    doc.text(profile.personName || profile.companyName || '', ML, y + 24);
   } catch { /* skip if image invalid */ }
-  return y + 34;
+  return y + 24;
 }
 
 // ── Professional footer ───────────────────────────────────────────────────────
