@@ -85,7 +85,7 @@ export default function Auth() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <img src="/logo.svg" alt="Jorge Faktura" className="w-24 h-24 mx-auto mb-4 drop-shadow-xl" />
+          <img src="/logo.png" alt="Jorge Faktura" className="w-24 h-24 mx-auto mb-4 drop-shadow-xl" />
         </div>
 
         <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
