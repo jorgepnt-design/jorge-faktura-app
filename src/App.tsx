@@ -38,6 +38,10 @@ function AppRoutes() {
         bic: '',
         paymentTerms: 'Zahlbar innerhalb von 14 Tagen ohne Abzug.',
         logo: null,
+        signature: null,
+        signatureOnInvoice: false,
+        signatureOnDeliveryNote: false,
+        signatureOnLetter: false,
         pdfFooter: '',
       });
     }

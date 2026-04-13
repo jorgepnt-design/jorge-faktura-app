@@ -19,6 +19,10 @@ export interface Profile {
   bic: string;
   paymentTerms: string;
   logo: string | null;
+  signature: string | null;
+  signatureOnInvoice: boolean;
+  signatureOnDeliveryNote: boolean;
+  signatureOnLetter: boolean;
   pdfFooter: string;
   invoiceCounter: number;
   deliveryNoteCounter: number;

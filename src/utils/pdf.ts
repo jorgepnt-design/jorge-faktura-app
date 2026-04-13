@@ -236,6 +236,24 @@ function drawPaymentBox(doc: jsPDF, paymentText: string, y: number): number {
   return y + boxH + 8;
 }
 
+// ── Signature ────────────────────────────────────────────────────────────────
+function drawSignature(doc: jsPDF, profile: Profile, y: number): number {
+  if (!profile.signature) return y;
+  try {
+    const imgType = profile.signature.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+    // Draw signature image (max 60mm wide, 20mm tall)
+    doc.addImage(profile.signature, imgType, ML, y, 60, 20);
+    text(doc, SLATE_500);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text(profile.personName || profile.companyName || '', ML, y + 24);
+    draw(doc, SLATE_300);
+    doc.setLineWidth(0.3);
+    doc.line(ML, y + 22, ML + 60, y + 22);
+  } catch { /* skip if image invalid */ }
+  return y + 28;
+}
+
 // ── Professional footer ───────────────────────────────────────────────────────
 function drawFooter(doc: jsPDF, profile: Profile): void {
   const pageH = doc.internal.pageSize.getHeight();
@@ -342,6 +360,11 @@ export function generateInvoicePDF(
   // Payment text
   if (invoice.paymentText) {
     y = drawPaymentBox(doc, invoice.paymentText, y);
+  }
+
+  // Signature
+  if (profile.signatureOnInvoice && profile.signature) {
+    y = drawSignature(doc, profile, y + 4);
   }
 
   drawFooter(doc, profile);
@@ -495,6 +518,11 @@ export function generateDeliveryNotePDF(
   text(doc, SLATE_300);
   doc.text('Unterschrift / Datum', ML, y + 21);
 
+  // Signature
+  if (profile.signatureOnDeliveryNote && profile.signature) {
+    drawSignature(doc, profile, y + 26);
+  }
+
   drawFooter(doc, profile);
   doc.save(`${note.deliveryNoteNumber}.pdf`);
 }
@@ -544,6 +572,12 @@ export function generateLetterPDF(
   text(doc, SLATE_700);
   const bodyLines = doc.splitTextToSize(letter.content, BODY_W);
   doc.text(bodyLines, ML, y);
+  y += bodyLines.length * 5 + 8;
+
+  // Signature
+  if (profile.signatureOnLetter && profile.signature) {
+    drawSignature(doc, profile, y);
+  }
 
   drawFooter(doc, profile);
   doc.save(`${letter.title || 'Schreiben'}.pdf`);

@@ -105,6 +105,10 @@ function createDefaultProfile(): Profile {
     bic: '',
     paymentTerms: 'Zahlbar innerhalb von 14 Tagen ohne Abzug.',
     logo: null,
+    signature: null,
+    signatureOnInvoice: false,
+    signatureOnDeliveryNote: false,
+    signatureOnLetter: false,
     pdfFooter: '',
     invoiceCounter: 0,
     deliveryNoteCounter: 0,
@@ -362,11 +366,16 @@ export const useStore = create<AppState>()(
           const p = createDefaultProfile();
           state.profiles = [p];
         }
-        // Migrate old profiles without pin
+        // Migrate old profiles: add pin + signature fields if missing
         if (state) {
-          state.profiles = state.profiles.map((p) =>
-            p.pin ? p : { ...p, pin: '1234' }
-          );
+          state.profiles = state.profiles.map((p) => ({
+            signature: null,
+            signatureOnInvoice: false,
+            signatureOnDeliveryNote: false,
+            signatureOnLetter: false,
+            ...p,
+            pin: p.pin || '1234',
+          }));
           // Migrate delivery notes: add price/VAT fields if missing
           state.deliveryNotes = state.deliveryNotes.map((n) => ({
             netTotal: 0,

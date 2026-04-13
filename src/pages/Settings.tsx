@@ -251,6 +251,70 @@ function ProfileEditCard({ profileId }: { profileId: string }) {
         </FormField>
       </div>
 
+      {/* Unterschrift */}
+      <div className="border-t border-slate-100 pt-4">
+        <h3 className="font-medium text-slate-800 mb-3">Unterschrift</h3>
+        <div className="flex items-start gap-4 mb-4">
+          <div className="flex-shrink-0">
+            {form.signature ? (
+              <div className="relative w-48 h-20 border border-slate-200 rounded-xl bg-white flex items-center justify-center overflow-hidden">
+                <img src={form.signature} alt="Unterschrift" className="max-w-full max-h-full object-contain p-1" />
+                <button
+                  onClick={() => setForm((f) => f ? { ...f, signature: null } : f)}
+                  className="absolute top-1 right-1 w-5 h-5 bg-red-100 rounded-full flex items-center justify-center hover:bg-red-200"
+                >
+                  <Trash2 className="w-3 h-3 text-red-500" />
+                </button>
+              </div>
+            ) : (
+              <div
+                onClick={() => document.getElementById('sig-upload')?.click()}
+                className="w-48 h-20 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 flex flex-col items-center justify-center cursor-pointer hover:border-brand-400 hover:bg-brand-50 transition-colors"
+              >
+                <Upload className="w-5 h-5 text-slate-400 mb-1" />
+                <span className="text-xs text-slate-400">Unterschrift hochladen</span>
+              </div>
+            )}
+            <input
+              id="sig-upload"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => setForm((f) => f ? { ...f, signature: ev.target?.result as string } : f);
+                reader.readAsDataURL(file);
+                e.target.value = '';
+              }}
+            />
+          </div>
+          <div className="text-xs text-slate-400 pt-2">
+            PNG oder JPG mit transparentem Hintergrund empfohlen.
+          </div>
+        </div>
+
+        <p className="text-xs font-medium text-slate-600 mb-2">Unterschrift einfügen bei:</p>
+        <div className="space-y-2">
+          {([
+            { key: 'signatureOnInvoice', label: 'Rechnungen' },
+            { key: 'signatureOnDeliveryNote', label: 'Lieferscheine' },
+            { key: 'signatureOnLetter', label: 'Schreiben' },
+          ] as const).map(({ key, label }) => (
+            <label key={key} className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={!!form[key]}
+                onChange={(e) => setForm((f) => f ? { ...f, [key]: e.target.checked } : f)}
+                className="w-4 h-4 rounded accent-brand-600"
+              />
+              <span className="text-sm text-slate-700">{label}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
       <div className="flex items-center gap-3">
         <Button fullWidth onClick={handleSave}>Speichern</Button>
         {saved && (
@@ -284,7 +348,9 @@ function BenutzerTab() {
       mobile: '', website: '', taxNumber: '', vatId: '',
       bankName: '', iban: '', bic: '',
       paymentTerms: 'Zahlbar innerhalb von 14 Tagen ohne Abzug.',
-      logo: null, pdfFooter: '',
+      logo: null, signature: null,
+      signatureOnInvoice: false, signatureOnDeliveryNote: false, signatureOnLetter: false,
+      pdfFooter: '',
     });
     setEditingId(p.id);
   };
