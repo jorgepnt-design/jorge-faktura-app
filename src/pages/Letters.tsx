@@ -9,7 +9,7 @@ import { FormField, Input, Textarea, Select } from '../components/common/FormFie
 import TemplateTextSelector from '../components/templates/TemplateTextSelector';
 import { Letter } from '../types';
 import { formatDate, todayISO } from '../utils/helpers';
-import jsPDF from 'jspdf';
+import { generateLetterPDF } from '../utils/pdf';
 
 type LetterFormData = Omit<Letter, 'id' | 'createdAt' | 'updatedAt'>;
 
@@ -82,59 +82,11 @@ export default function Letters() {
 
   const handlePDF = (letter: Letter) => {
     const profile = profiles.find((p) => p.id === letter.profileId);
+    if (!profile) return;
     const customer = letter.customerId
-      ? customers.find((c) => c.id === letter.customerId)
+      ? customers.find((c) => c.id === letter.customerId) ?? null
       : null;
-
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    const pageW = doc.internal.pageSize.getWidth();
-    let y = 20;
-
-    if (profile?.logo) {
-      try {
-        const imgType = profile.logo.startsWith('data:image/png') ? 'PNG' : 'JPEG';
-        doc.addImage(profile.logo, imgType, 14, y, 40, 16);
-      } catch { /* skip */ }
-    }
-
-    doc.setFontSize(8);
-    doc.setTextColor(100);
-    const senderLines = [
-      profile?.companyName || '',
-      profile?.address || '',
-      `${profile?.zipCode || ''} ${profile?.city || ''}`.trim(),
-    ].filter(Boolean);
-    senderLines.forEach((line, i) => doc.text(line, pageW - 14, y + 4 + i * 4, { align: 'right' }));
-
-    y += 30;
-
-    if (customer) {
-      doc.setFontSize(10);
-      doc.setTextColor(60);
-      [customer.companyName, customer.contactPerson, customer.address,
-        `${customer.zipCode} ${customer.city}`].filter(Boolean).forEach((line, i) => {
-        doc.text(line, 14, y + i * 5);
-      });
-      y += 25;
-    }
-
-    doc.setFontSize(8);
-    doc.setTextColor(130);
-    doc.text(formatDate(letter.letterDate), pageW - 14, y, { align: 'right' });
-
-    doc.setFontSize(14);
-    doc.setTextColor(30);
-    doc.setFont('helvetica', 'bold');
-    doc.text(letter.title, 14, y + 10);
-    y += 20;
-
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(50);
-    const lines = doc.splitTextToSize(letter.content, 182);
-    doc.text(lines, 14, y);
-
-    doc.save(`${letter.title || 'Schreiben'}.pdf`);
+    generateLetterPDF(letter, profile, customer);
   };
 
   const profileName = (id: string) => profiles.find((p) => p.id === id)?.internalName || '-';
