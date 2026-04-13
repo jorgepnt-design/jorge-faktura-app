@@ -149,6 +149,7 @@ export interface Letter {
   id: string;
   profileId: string;
   customerId: string | null;
+  language: 'de' | 'en';
   title: string;
   content: string;
   templateId: string | null;

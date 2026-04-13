@@ -3,6 +3,50 @@ import autoTable from 'jspdf-autotable';
 import { Invoice, DeliveryNote, Letter, Profile, Customer } from '../types';
 import { formatCurrency, formatDate } from './helpers';
 
+// ── Translation table ─────────────────────────────────────────────────────────
+type Lang = 'de' | 'en';
+
+const T: Record<Lang, {
+  invoice: string;
+  nr: string;
+  datum: string;
+  servicePeriod: string;
+  dueDate: string;
+  description: string;
+  unitPrice: string;
+  vat: string;
+  netAmount: string;
+  totalAmount: string;
+  vatLabel: (rate: number) => string;
+}> = {
+  de: {
+    invoice:       'Rechnung',
+    nr:            'Nr',
+    datum:         'Datum',
+    servicePeriod: 'Leistungszeitraum',
+    dueDate:       'Fällig bis',
+    description:   'Beschreibung',
+    unitPrice:     'Einzelpreis',
+    vat:           'MwSt.',
+    netAmount:     'Nettobetrag',
+    totalAmount:   'Gesamtbetrag',
+    vatLabel:      (rate) => `MwSt. ${rate}%:`,
+  },
+  en: {
+    invoice:       'Invoice',
+    nr:            'No',
+    datum:         'Date',
+    servicePeriod: 'Service Period',
+    dueDate:       'Due Date',
+    description:   'Description',
+    unitPrice:     'Unit Price',
+    vat:           'VAT',
+    netAmount:     'Net Amount',
+    totalAmount:   'Total Amount',
+    vatLabel:      (rate) => `VAT ${rate}%:`,
+  },
+};
+
 // ── Color palette ────────────────────────────────────────────────────────────
 type RGB = [number, number, number];
 const PRIMARY: RGB    = [30,  64, 175];  // blue-800
@@ -86,7 +130,8 @@ function drawMetaBox(
   docNumber: string,
   docDate: string,
   extraMeta: Array<{ label: string; value: string }>,
-  y: number
+  y: number,
+  lang: Lang = 'de'
 ): void {
   const boxX = 120;
   const boxW  = PAGE_W - MR - boxX; // ~76 mm
@@ -109,9 +154,9 @@ function drawMetaBox(
   doc.setFontSize(8.5);
   text(doc, SLATE_700);
   let dy = y + 14;
-  doc.text(`Nr: ${docNumber}`, boxX + 4, dy);
+  doc.text(`${T[lang].nr}: ${docNumber}`, boxX + 4, dy);
   dy += 5.5;
-  doc.text(`Datum: ${formatDate(docDate)}`, boxX + 4, dy);
+  doc.text(`${T[lang].datum}: ${formatDate(docDate)}`, boxX + 4, dy);
 
   extraMeta.forEach(({ label, value }) => {
     if (value) {
@@ -167,7 +212,8 @@ function drawTotals(
   netTotal: number,
   vatTotals: { rate: number; amount: number }[],
   grossTotal: number,
-  startY: number
+  startY: number,
+  lang: Lang = 'de'
 ): number {
   const boxX = 120;
   const boxW  = PAGE_W - MR - boxX;
@@ -187,13 +233,13 @@ function drawTotals(
   text(doc, SLATE_700);
 
   // Net total
-  doc.text('Nettobetrag:', boxX + 4, ty);
+  doc.text(`${T[lang].netAmount}:`, boxX + 4, ty);
   doc.text(formatCurrency(netTotal), PAGE_W - MR - 3, ty, { align: 'right' });
   ty += 6.5;
 
   // VAT rows
   vatTotals.forEach((vt) => {
-    doc.text(`MwSt. ${vt.rate}%:`, boxX + 4, ty);
+    doc.text(T[lang].vatLabel(vt.rate), boxX + 4, ty);
     doc.text(formatCurrency(vt.amount), PAGE_W - MR - 3, ty, { align: 'right' });
     ty += 6.5;
   });
@@ -212,7 +258,7 @@ function drawTotals(
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
   text(doc, WHITE);
-  doc.text('Gesamtbetrag:', boxX + 4, ty + 1);
+  doc.text(`${T[lang].totalAmount}:`, boxX + 4, ty + 1);
   doc.text(formatCurrency(grossTotal), PAGE_W - MR - 3, ty + 1, { align: 'right' });
 
   return startY + boxH + 10;
@@ -286,6 +332,7 @@ export function generateInvoicePDF(
   customer: Customer | null
 ) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const lang: Lang = invoice.language || 'de';
 
   // Brand header
   let y = drawBrandHeader(doc, profile);
@@ -293,10 +340,10 @@ export function generateInvoicePDF(
   // Two-column: address (left) + meta box (right)
   const sectionY = y;
 
-  drawMetaBox(doc, 'Rechnung', invoice.invoiceNumber, invoice.invoiceDate, [
-    { label: 'Leistungszeitraum', value: invoice.servicePeriod || '' },
-    { label: 'Fällig bis', value: invoice.dueDate ? formatDate(invoice.dueDate) : '' },
-  ], sectionY);
+  drawMetaBox(doc, T[lang].invoice, invoice.invoiceNumber, invoice.invoiceDate, [
+    { label: T[lang].servicePeriod, value: invoice.servicePeriod || '' },
+    { label: T[lang].dueDate, value: invoice.dueDate ? formatDate(invoice.dueDate) : '' },
+  ], sectionY, lang);
 
   if (customer) {
     drawAddressBlock(doc, profile, customer, sectionY);
@@ -325,7 +372,7 @@ export function generateInvoicePDF(
 
   autoTable(doc, {
     startY: y,
-    head: [['#', 'Beschreibung', 'Einzelpreis', 'MwSt.', 'Nettobetrag']],
+    head: [['#', T[lang].description, T[lang].unitPrice, T[lang].vat, T[lang].netAmount]],
     body: tableBody,
     theme: 'plain',
     headStyles: {
@@ -355,7 +402,7 @@ export function generateInvoicePDF(
   y = (doc as any).lastAutoTable.finalY + 6;
 
   // Totals
-  y = drawTotals(doc, invoice.netTotal, invoice.vatTotals, invoice.grossTotal, y);
+  y = drawTotals(doc, invoice.netTotal, invoice.vatTotals, invoice.grossTotal, y, lang);
 
   // Payment text
   if (invoice.paymentText) {

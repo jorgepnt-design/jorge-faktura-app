@@ -329,6 +329,16 @@ export default function Invoices() {
                 ))}
               </Select>
             </FormField>
+
+            <FormField label="Sprache / Language">
+              <Select
+                value={form.language}
+                onChange={(e) => setForm({ ...form, language: e.target.value as 'de' | 'en' })}
+              >
+                <option value="de">🇩🇪 Deutsch</option>
+                <option value="en">🇬🇧 English</option>
+              </Select>
+            </FormField>
           </div>
 
           {/* Intro text */}

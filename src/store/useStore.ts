@@ -391,6 +391,11 @@ export const useStore = create<AppState>()(
               ...item,
             })),
           }));
+          // Migrate letters: add language field if missing
+          state.letters = state.letters.map((l) => ({
+            language: 'de' as const,
+            ...l,
+          }));
           // Always start logged out after page reload
           state.loggedInProfileId = null;
         }

@@ -17,6 +17,7 @@ function emptyForm(profileId: string): LetterFormData {
   return {
     profileId,
     customerId: null,
+    language: 'de',
     title: '',
     content: '',
     templateId: null,
@@ -187,6 +188,16 @@ export default function Letters() {
                 value={form.letterDate}
                 onChange={(e) => setForm({ ...form, letterDate: e.target.value })}
               />
+            </FormField>
+
+            <FormField label="Sprache / Language">
+              <Select
+                value={form.language}
+                onChange={(e) => setForm({ ...form, language: e.target.value as 'de' | 'en' })}
+              >
+                <option value="de">Deutsch</option>
+                <option value="en">English</option>
+              </Select>
             </FormField>
 
             <FormField label="Betreff" required>
