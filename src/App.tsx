@@ -63,7 +63,7 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <BrowserRouter basename="/jorge-faktura-app">
+    <BrowserRouter>
       <AppRoutes />
     </BrowserRouter>
   );
