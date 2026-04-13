@@ -1,22 +1,31 @@
 import React, { useState } from 'react';
-import { FileText, ChevronLeft } from 'lucide-react';
+import { FileText, ChevronLeft, UserPlus, Eye, EyeOff } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { Profile } from '../types';
 
-type Step = 'select' | 'pin';
+type Step = 'select' | 'pin' | 'register';
 
 export default function Auth() {
-  const { profiles, loginWithProfile } = useStore();
+  const { profiles, loginWithProfile, addProfile } = useStore();
   const [step, setStep] = useState<Step>('select');
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
+
+  // Login state
   const [pin, setPin] = useState('');
-  const [error, setError] = useState('');
+  const [loginError, setLoginError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Register state
+  const [regName, setRegName] = useState('');
+  const [regPin, setRegPin] = useState('');
+  const [regPinConfirm, setRegPinConfirm] = useState('');
+  const [showRegPin, setShowRegPin] = useState(false);
+  const [regError, setRegError] = useState('');
 
   const handleSelectProfile = (profile: Profile) => {
     setSelectedProfile(profile);
     setPin('');
-    setError('');
+    setLoginError('');
     setStep('pin');
   };
 
@@ -27,11 +36,48 @@ export default function Auth() {
     setTimeout(() => {
       const ok = loginWithProfile(selectedProfile.id, pin);
       if (!ok) {
-        setError('Falscher PIN. Bitte erneut versuchen.');
+        setLoginError('Falscher PIN. Bitte erneut versuchen.');
         setPin('');
       }
       setLoading(false);
     }, 300);
+  };
+
+  const handleRegister = (e: React.FormEvent) => {
+    e.preventDefault();
+    setRegError('');
+    if (!regName.trim()) { setRegError('Bitte einen Benutzernamen eingeben.'); return; }
+    if (regPin.length < 4) { setRegError('PIN muss mindestens 4 Zeichen haben.'); return; }
+    if (regPin !== regPinConfirm) { setRegError('Die PINs stimmen nicht überein.'); return; }
+    if (profiles.some((p) => p.internalName.toLowerCase() === regName.trim().toLowerCase())) {
+      setRegError('Dieser Benutzername ist bereits vergeben.');
+      return;
+    }
+
+    const newProfile = addProfile({
+      internalName: regName.trim(),
+      pin: regPin,
+      companyName: '', personName: '', address: '', zipCode: '',
+      city: '', country: 'Deutschland', email: '', phone: '',
+      mobile: '', website: '', taxNumber: '', vatId: '',
+      bankName: '', iban: '', bic: '',
+      paymentTerms: 'Zahlbar innerhalb von 14 Tagen ohne Abzug.',
+      logo: null, pdfFooter: '',
+    });
+
+    loginWithProfile(newProfile.id, regPin);
+  };
+
+  const goToRegister = () => {
+    setRegName(''); setRegPin(''); setRegPinConfirm('');
+    setRegError(''); setShowRegPin(false);
+    setStep('register');
+  };
+
+  const goBack = () => {
+    setStep('select');
+    setLoginError(''); setPin('');
+    setRegError('');
   };
 
   return (
@@ -47,18 +93,17 @@ export default function Auth() {
         </div>
 
         <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
-          {/* Step: Profil wählen */}
+
+          {/* ── Step: Profil wählen ───────────────────────────────────────── */}
           {step === 'select' && (
             <div className="p-6">
-              <h2 className="text-xl font-semibold text-slate-900 mb-1">Profil wählen</h2>
-              <p className="text-sm text-slate-400 mb-5">Mit welchem Profil möchten Sie sich anmelden?</p>
+              <h2 className="text-xl font-semibold text-slate-900 mb-1">Willkommen</h2>
+              <p className="text-sm text-slate-400 mb-5">
+                {profiles.length > 0 ? 'Mit welchem Profil möchten Sie sich anmelden?' : 'Legen Sie zuerst ein Konto an.'}
+              </p>
 
-              {profiles.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-8">
-                  Keine Profile vorhanden.
-                </p>
-              ) : (
-                <div className="space-y-2">
+              {profiles.length > 0 && (
+                <div className="space-y-2 mb-4">
                   {profiles.map((profile) => (
                     <button
                       key={profile.id}
@@ -87,21 +132,30 @@ export default function Auth() {
                   ))}
                 </div>
               )}
+
+              {/* Register button */}
+              <div className={profiles.length > 0 ? 'border-t border-slate-100 pt-4' : ''}>
+                <button
+                  onClick={goToRegister}
+                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl border-2 border-dashed border-brand-200 text-brand-600 font-medium text-sm hover:bg-brand-50 transition-colors"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Neues Konto erstellen
+                </button>
+              </div>
             </div>
           )}
 
-          {/* Step: PIN eingeben */}
+          {/* ── Step: PIN eingeben ────────────────────────────────────────── */}
           {step === 'pin' && selectedProfile && (
             <div className="p-6">
               <button
-                onClick={() => { setStep('select'); setError(''); setPin(''); }}
+                onClick={goBack}
                 className="flex items-center gap-1 text-sm text-slate-400 hover:text-slate-600 mb-5 transition-colors"
               >
-                <ChevronLeft className="w-4 h-4" />
-                Zurück
+                <ChevronLeft className="w-4 h-4" /> Zurück
               </button>
 
-              {/* Aktives Profil anzeigen */}
               <div className="flex items-center gap-3 mb-6 p-3 bg-slate-50 rounded-2xl">
                 {selectedProfile.logo ? (
                   <img src={selectedProfile.logo} alt="" className="w-10 h-10 rounded-xl object-cover" />
@@ -120,24 +174,21 @@ export default function Auth() {
 
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    PIN eingeben
-                  </label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">PIN eingeben</label>
                   <input
                     type="password"
                     inputMode="numeric"
                     value={pin}
-                    onChange={(e) => { setPin(e.target.value); setError(''); }}
+                    onChange={(e) => { setPin(e.target.value); setLoginError(''); }}
                     placeholder="••••"
                     maxLength={20}
                     autoFocus
                     className={`w-full h-12 px-4 rounded-xl border text-center text-2xl font-bold tracking-widest
                       focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent
-                      ${error ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
+                      ${loginError ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
                   />
-                  {error && <p className="text-xs text-red-500 mt-1.5">{error}</p>}
+                  {loginError && <p className="text-xs text-red-500 mt-1.5">{loginError}</p>}
                 </div>
-
                 <button
                   type="submit"
                   disabled={!pin || loading}
@@ -147,14 +198,112 @@ export default function Auth() {
                 >
                   {loading ? (
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
-                  ) : (
-                    'Anmelden'
-                  )}
+                  ) : 'Anmelden'}
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* ── Step: Registrieren ────────────────────────────────────────── */}
+          {step === 'register' && (
+            <div className="p-6">
+              <button
+                onClick={goBack}
+                className="flex items-center gap-1 text-sm text-slate-400 hover:text-slate-600 mb-5 transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" /> Zurück
+              </button>
+
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center">
+                  <UserPlus className="w-5 h-5 text-brand-600" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-slate-900">Neues Konto erstellen</h2>
+                  <p className="text-xs text-slate-400">Benutzername und PIN festlegen</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleRegister} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Benutzername <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={regName}
+                    onChange={(e) => { setRegName(e.target.value); setRegError(''); }}
+                    placeholder="z.B. Max Mustermann"
+                    maxLength={50}
+                    autoFocus
+                    className="w-full h-11 px-4 rounded-xl border border-slate-300 text-sm
+                      focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    PIN wählen <span className="text-red-400">*</span>
+                    <span className="text-slate-400 font-normal ml-1">(mind. 4 Zeichen)</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showRegPin ? 'text' : 'password'}
+                      value={regPin}
+                      onChange={(e) => { setRegPin(e.target.value); setRegError(''); }}
+                      placeholder="PIN eingeben"
+                      maxLength={20}
+                      className="w-full h-11 px-4 pr-11 rounded-xl border border-slate-300 text-sm
+                        focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowRegPin(!showRegPin)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      {showRegPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    PIN wiederholen <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    value={regPinConfirm}
+                    onChange={(e) => { setRegPinConfirm(e.target.value); setRegError(''); }}
+                    placeholder="PIN bestätigen"
+                    maxLength={20}
+                    className="w-full h-11 px-4 rounded-xl border border-slate-300 text-sm
+                      focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                  />
+                </div>
+
+                {regError && (
+                  <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
+                    {regError}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={!regName.trim() || !regPin || !regPinConfirm}
+                  className="w-full h-12 rounded-xl bg-brand-600 text-white font-semibold text-base
+                    hover:bg-brand-700 active:bg-brand-800 transition-colors
+                    disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Konto erstellen & anmelden
                 </button>
               </form>
             </div>
           )}
         </div>
+
+        <p className="text-center text-brand-200 text-xs mt-6">
+          Daten werden sicher lokal gespeichert.
+        </p>
       </div>
     </div>
   );
