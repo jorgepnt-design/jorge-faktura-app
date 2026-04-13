@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Settings as SettingsIcon, User, Package, Shield, Database,
   Upload, Trash2, Copy, Plus, Eye, EyeOff, Download, CheckCircle,
-  AlertTriangle, ArrowRight,
+  AlertTriangle, ArrowRight, LogOut,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import Button from '../components/common/Button';
@@ -58,21 +58,31 @@ export default function Settings() {
 // ─── Profil Tab – eigenes Profil bearbeiten + PIN ändern ──────────────────────
 
 function ProfileTab() {
-  const { loggedInProfileId, updateProfile } = useStore();
+  const { loggedInProfileId, logout, changePassword } = useStore();
+  const navigate = useNavigate();
   const [showPinForm, setShowPinForm] = useState(false);
-  const [pin, setPin] = useState('');
+  const [pin, setPin]           = useState('');
   const [pinConfirm, setPinConfirm] = useState('');
-  const [showPin, setShowPin] = useState(false);
+  const [showPin, setShowPin]   = useState(false);
   const [pinError, setPinError] = useState('');
   const [pinSuccess, setPinSuccess] = useState(false);
+  const [saving, setSaving]     = useState(false);
 
-  const handleSavePin = () => {
-    if (pin.length < 4) { setPinError('Mindestens 4 Zeichen'); return; }
-    if (pin !== pinConfirm) { setPinError('PINs stimmen nicht überein'); return; }
-    if (loggedInProfileId) updateProfile(loggedInProfileId, { pin });
+  const handleSavePin = async () => {
+    if (pin.length < 6)             { setPinError('Mindestens 6 Zeichen'); return; }
+    if (pin !== pinConfirm)          { setPinError('PINs stimmen nicht überein'); return; }
+    setSaving(true);
+    const result = await changePassword(pin);
+    setSaving(false);
+    if (!result.success) { setPinError(result.error || 'Fehler beim Speichern.'); return; }
     setPin(''); setPinConfirm(''); setPinError(''); setShowPinForm(false);
     setPinSuccess(true);
     setTimeout(() => setPinSuccess(false), 3000);
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
   };
 
   return (
@@ -80,12 +90,12 @@ function ProfileTab() {
       {/* Profil bearbeiten */}
       {loggedInProfileId && <ProfileEditCard profileId={loggedInProfileId} />}
 
-      {/* PIN ändern */}
+      {/* PIN (Passwort) ändern */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="font-semibold text-slate-800">Mein PIN ändern</h2>
-            <p className="text-xs text-slate-400 mt-0.5">Anmelde-PIN für dieses Profil</p>
+            <h2 className="font-semibold text-slate-800">PIN ändern</h2>
+            <p className="text-xs text-slate-400 mt-0.5">Anmelde-PIN für dieses Konto</p>
           </div>
           <Button size="sm" variant="outline" onClick={() => setShowPinForm(!showPinForm)}>
             {showPinForm ? 'Abbrechen' : 'Ändern'}
@@ -98,7 +108,7 @@ function ProfileTab() {
                 type={showPin ? 'text' : 'password'}
                 value={pin}
                 onChange={(e) => { setPin(e.target.value); setPinError(''); }}
-                placeholder="Neuer PIN (mind. 4 Zeichen)"
+                placeholder="Neuer PIN (mind. 6 Zeichen)"
                 maxLength={20}
               />
               <button
@@ -116,7 +126,9 @@ function ProfileTab() {
               maxLength={20}
             />
             {pinError && <p className="text-xs text-red-500">{pinError}</p>}
-            <Button fullWidth onClick={handleSavePin}>PIN speichern</Button>
+            <Button fullWidth onClick={handleSavePin} disabled={saving}>
+              {saving ? 'Wird gespeichert…' : 'PIN speichern'}
+            </Button>
           </div>
         )}
         {pinSuccess && (
@@ -124,6 +136,19 @@ function ProfileTab() {
             <CheckCircle className="w-4 h-4" /> PIN erfolgreich geändert
           </div>
         )}
+      </div>
+
+      {/* Abmelden */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-semibold text-slate-800">Abmelden</h2>
+            <p className="text-xs text-slate-400 mt-0.5">Von diesem Gerät abmelden</p>
+          </div>
+          <Button size="sm" variant="outline" icon={<LogOut className="w-4 h-4" />} onClick={handleLogout}>
+            Abmelden
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -557,11 +582,11 @@ function DatenrettungTab() {
         )}
       </div>
 
-      <div className="bg-amber-50 rounded-2xl border border-amber-200 p-4">
+      <div className="bg-blue-50 rounded-2xl border border-blue-200 p-4">
         <div className="flex gap-3">
-          <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-amber-700">
-            Alle Daten werden lokal im Browser gespeichert. Bitte regelmäßig Backups erstellen.
+          <CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-blue-700">
+            Alle Daten werden sicher in der Cloud gespeichert und sind von jedem Gerät aus zugänglich.
           </p>
         </div>
       </div>

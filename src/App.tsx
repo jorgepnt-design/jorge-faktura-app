@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useStore } from './store/useStore';
 import AppLayout from './components/layout/AppLayout';
@@ -13,39 +13,22 @@ import Templates from './pages/Templates';
 import Settings from './pages/Settings';
 
 function AppRoutes() {
-  const { loggedInProfileId, profiles, addProfile } = useStore();
+  const { loggedInProfileId, restoreSession } = useStore();
+  const [sessionChecked, setSessionChecked] = useState(false);
 
-  // Ensure at least one profile exists
+  // On every page load: check if Supabase has a valid session and re-hydrate
   useEffect(() => {
-    if (profiles.length === 0) {
-      addProfile({
-        internalName: 'Admin',
-        pin: '1234',
-        companyName: '',
-        personName: '',
-        address: '',
-        zipCode: '',
-        city: '',
-        country: 'Deutschland',
-        email: '',
-        phone: '',
-        mobile: '',
-        website: '',
-        taxNumber: '',
-        vatId: '',
-        bankName: '',
-        iban: '',
-        bic: '',
-        paymentTerms: 'Zahlbar innerhalb von 14 Tagen ohne Abzug.',
-        logo: null,
-        signature: null,
-        signatureOnInvoice: false,
-        signatureOnDeliveryNote: false,
-        signatureOnLetter: false,
-        pdfFooter: '',
-      });
-    }
-  }, [profiles.length]);
+    restoreSession().finally(() => setSessionChecked(true));
+  }, []);
+
+  // Show full-screen spinner while we check the session (prevents auth-flash)
+  if (!sessionChecked) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-brand-600 to-brand-800 flex items-center justify-center">
+        <div className="w-14 h-14 border-4 border-white border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!loggedInProfileId) {
     return <Auth />;
