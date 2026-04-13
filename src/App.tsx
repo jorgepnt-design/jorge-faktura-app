@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import Customers from './pages/Customers';
 import Invoices from './pages/Invoices';
 import DeliveryNotes from './pages/DeliveryNotes';
+import Articles from './pages/Articles';
 import Letters from './pages/Letters';
 import Templates from './pages/Templates';
 import Settings from './pages/Settings';
@@ -53,6 +54,7 @@ function AppRoutes() {
         <Route path="kunden" element={<Customers />} />
         <Route path="rechnungen" element={<Invoices />} />
         <Route path="lieferscheine" element={<DeliveryNotes />} />
+        <Route path="artikel" element={<Articles />} />
         <Route path="schreiben" element={<Letters />} />
         <Route path="vorlagen" element={<Templates />} />
         <Route path="einstellungen" element={<Settings />} />

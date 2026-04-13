@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Settings as SettingsIcon, User, Package, Shield, Database,
   Upload, Trash2, Copy, Plus, Eye, EyeOff, Download, CheckCircle,
-  AlertTriangle,
+  AlertTriangle, ArrowRight,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import Button from '../components/common/Button';
@@ -404,136 +405,34 @@ function BenutzerTab() {
 // ─── Artikel Tab ──────────────────────────────────────────────────────────────
 
 function ArticleTab() {
-  const { profiles, loggedInProfileId, articles, addArticle, updateArticle, deleteArticle } = useStore();
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-
-  const [form, setForm] = useState({
-    profileId: loggedInProfileId as string | null,
-    name: '',
-    description: '',
-    unit: 'Stk.',
-    netPrice: 0,
-    vatRate: 19 as 0 | 7 | 19,
-  });
-
-  const myArticles = articles.filter(
+  const navigate = useNavigate();
+  const { articles, loggedInProfileId } = useStore();
+  const count = articles.filter(
     (a) => a.profileId === null || a.profileId === loggedInProfileId
-  );
-
-  const openForm = (article?: typeof articles[0]) => {
-    if (article) {
-      setEditingId(article.id);
-      setForm({
-        profileId: article.profileId,
-        name: article.name,
-        description: article.description,
-        unit: article.unit,
-        netPrice: article.netPrice,
-        vatRate: article.vatRate,
-      });
-    } else {
-      setEditingId(null);
-      setForm({ profileId: loggedInProfileId, name: '', description: '', unit: 'Stk.', netPrice: 0, vatRate: 19 });
-    }
-    setShowForm(true);
-  };
-
-  const handleSave = () => {
-    if (!form.name.trim()) return;
-    if (editingId) updateArticle(editingId, form);
-    else addArticle(form);
-    setShowForm(false);
-  };
+  ).length;
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="font-semibold text-slate-800">Artikelbibliothek</h2>
-        <Button size="sm" icon={<Plus className="w-3 h-3" />} onClick={() => openForm()}>Artikel</Button>
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center flex-shrink-0">
+            <Package className="w-6 h-6 text-orange-400" />
+          </div>
+          <div className="flex-1">
+            <h2 className="font-semibold text-slate-800">Artikelbibliothek</h2>
+            <p className="text-sm text-slate-400 mt-0.5">{count} Artikel gespeichert</p>
+          </div>
+          <button
+            onClick={() => navigate('/artikel')}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition-colors"
+          >
+            Verwalten <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+        <p className="text-xs text-slate-400 mt-4">
+          Artikel können beim Erstellen von Lieferscheinen direkt ausgewählt werden. Preis und MwSt. werden automatisch übernommen.
+        </p>
       </div>
-
-      {myArticles.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-8 text-center">
-          <Package className="w-8 h-8 text-slate-300 mx-auto mb-3" />
-          <p className="text-sm text-slate-500">Noch keine Artikel</p>
-          <Button size="sm" className="mt-3" onClick={() => openForm()}>+ Artikel hinzufügen</Button>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {myArticles.map((article) => (
-            <div key={article.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center flex-shrink-0">
-                  <Package className="w-5 h-5 text-orange-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-slate-900 truncate">{article.name}</p>
-                  <p className="text-xs text-slate-400">
-                    {article.netPrice.toFixed(2)} € / {article.unit} · MwSt. {article.vatRate}%
-                  </p>
-                </div>
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <button onClick={() => openForm(article)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400">
-                    <SettingsIcon className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => setDeleteId(article.id)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <Modal
-        isOpen={showForm}
-        onClose={() => setShowForm(false)}
-        title={editingId ? 'Artikel bearbeiten' : 'Neuer Artikel'}
-        size="md"
-        footer={
-          <div className="flex gap-3">
-            <Button variant="secondary" onClick={() => setShowForm(false)}>Abbrechen</Button>
-            <Button fullWidth onClick={handleSave} disabled={!form.name.trim()}>
-              {editingId ? 'Speichern' : 'Erstellen'}
-            </Button>
-          </div>
-        }
-      >
-        <div className="space-y-4">
-          <FormField label="Artikelname" required>
-            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="z.B. Webentwicklung" />
-          </FormField>
-          <FormField label="Beschreibung">
-            <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} />
-          </FormField>
-          <div className="grid grid-cols-3 gap-3">
-            <FormField label="Einheit">
-              <Select value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })}>
-                {['Stk.', 'Std.', 'Tage', 'km', 'Pauschal', 'm²', 'Liter', 'kg'].map((u) => <option key={u} value={u}>{u}</option>)}
-              </Select>
-            </FormField>
-            <FormField label="Preis (Netto)">
-              <Input type="number" min="0" step="0.01" value={form.netPrice} onChange={(e) => setForm({ ...form, netPrice: parseFloat(e.target.value) || 0 })} />
-            </FormField>
-            <FormField label="MwSt.">
-              <Select value={form.vatRate} onChange={(e) => setForm({ ...form, vatRate: parseInt(e.target.value) as 0 | 7 | 19 })}>
-                {[0, 7, 19].map((r) => <option key={r} value={r}>{r}%</option>)}
-              </Select>
-            </FormField>
-          </div>
-        </div>
-      </Modal>
-
-      <ConfirmDialog
-        isOpen={!!deleteId}
-        onClose={() => setDeleteId(null)}
-        onConfirm={() => { if (deleteId) deleteArticle(deleteId); }}
-        title="Artikel löschen"
-        message="Möchten Sie diesen Artikel wirklich löschen?"
-      />
     </div>
   );
 }

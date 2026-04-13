@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { X, LogOut, FileText } from 'lucide-react';
 import {
-  LayoutDashboard, Users, Truck, PenLine, LayoutTemplate, Settings
+  LayoutDashboard, Users, Truck, Package, PenLine, LayoutTemplate, Settings
 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 
@@ -11,6 +11,7 @@ const navItems = [
   { to: '/kunden', label: 'Kunden', icon: Users },
   { to: '/rechnungen', label: 'Rechnungen', icon: FileText },
   { to: '/lieferscheine', label: 'Lieferscheine', icon: Truck },
+  { to: '/artikel', label: 'Artikel', icon: Package },
   { to: '/schreiben', label: 'Schreiben', icon: PenLine },
   { to: '/vorlagen', label: 'Vorlagen', icon: LayoutTemplate },
   { to: '/einstellungen', label: 'Einstellungen', icon: Settings },
