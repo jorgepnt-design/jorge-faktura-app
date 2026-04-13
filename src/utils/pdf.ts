@@ -300,8 +300,6 @@ export function generateInvoicePDF(
   const tableBody = invoice.items.map((item, idx) => [
     String(idx + 1),
     item.description,
-    item.quantity.toString(),
-    item.unit,
     formatCurrency(item.netUnitPrice),
     `${item.vatRate} %`,
     formatCurrency(item.netTotal),
@@ -309,7 +307,7 @@ export function generateInvoicePDF(
 
   autoTable(doc, {
     startY: y,
-    head: [['#', 'Beschreibung', 'Menge', 'Einheit', 'Einzelpreis', 'MwSt.', 'Nettobetrag']],
+    head: [['#', 'Beschreibung', 'Einzelpreis', 'MwSt.', 'Nettobetrag']],
     body: tableBody,
     theme: 'plain',
     headStyles: {
@@ -327,11 +325,9 @@ export function generateInvoicePDF(
     },
     columnStyles: {
       0: { cellWidth: 8,  halign: 'center' },
-      2: { cellWidth: 16, halign: 'right' },
-      3: { cellWidth: 18 },
-      4: { cellWidth: 28, halign: 'right' },
-      5: { cellWidth: 16, halign: 'center' },
-      6: { cellWidth: 28, halign: 'right' },
+      2: { cellWidth: 30, halign: 'right' },
+      3: { cellWidth: 18, halign: 'center' },
+      4: { cellWidth: 30, halign: 'right' },
     },
     margin: { left: ML, right: MR },
     tableLineColor: SLATE_300,
