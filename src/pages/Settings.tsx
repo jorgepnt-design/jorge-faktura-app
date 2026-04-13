@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Settings as SettingsIcon, User, Package, Shield, Database,
+  Settings as SettingsIcon, User, Package, Database,
   Upload, Trash2, Copy, Plus, Eye, EyeOff, Download, CheckCircle,
   AlertTriangle, ArrowRight, LogOut,
 } from 'lucide-react';
@@ -12,14 +12,13 @@ import ConfirmDialog from '../components/common/ConfirmDialog';
 import { FormField, Input, Textarea, Select } from '../components/common/FormField';
 import { Profile } from '../types';
 
-type Tab = 'profil' | 'artikel' | 'freigaben' | 'datenrettung';
+type Tab = 'profil' | 'artikel' | 'datenrettung';
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState<Tab>('profil');
   const tabs: { value: Tab; label: string; icon: React.ReactNode }[] = [
     { value: 'profil', label: 'Profil', icon: <User className="w-4 h-4" /> },
     { value: 'artikel', label: 'Artikel', icon: <Package className="w-4 h-4" /> },
-    { value: 'freigaben', label: 'Benutzer', icon: <Shield className="w-4 h-4" /> },
     { value: 'datenrettung', label: 'Daten', icon: <Database className="w-4 h-4" /> },
   ];
 
@@ -49,7 +48,6 @@ export default function Settings() {
 
       {activeTab === 'profil' && <ProfileTab />}
       {activeTab === 'artikel' && <ArticleTab />}
-      {activeTab === 'freigaben' && <BenutzerTab />}
       {activeTab === 'datenrettung' && <DatenrettungTab />}
     </div>
   );
@@ -348,147 +346,6 @@ function ProfileEditCard({ profileId }: { profileId: string }) {
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-// ─── Benutzer-Tab (nur Admin sieht alle Profile) ──────────────────────────────
-
-function BenutzerTab() {
-  const { profiles, loggedInProfileId, addProfile, updateProfile, deleteProfile, duplicateProfile } = useStore();
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [showNewPin, setShowNewPin] = useState<string | null>(null);
-  const [newPin, setNewPin] = useState('');
-  const [newPinConfirm, setNewPinConfirm] = useState('');
-  const [pinError, setPinError] = useState('');
-  const [pinSuccess, setPinSuccess] = useState('');
-
-  const handleAddProfile = () => {
-    const p = addProfile({
-      internalName: 'Neues Profil',
-      pin: '1234',
-      companyName: '', personName: '', address: '', zipCode: '',
-      city: '', country: 'Deutschland', email: '', phone: '',
-      mobile: '', website: '', taxNumber: '', vatId: '',
-      bankName: '', iban: '', bic: '',
-      paymentTerms: 'Zahlbar innerhalb von 14 Tagen ohne Abzug.',
-      logo: null, signature: null,
-      signatureOnInvoice: false, signatureOnDeliveryNote: false, signatureOnLetter: false,
-      pdfFooter: '',
-    });
-    setEditingId(p.id);
-  };
-
-  const handleSetPin = (profileId: string) => {
-    if (newPin.length < 4) { setPinError('Mind. 4 Zeichen'); return; }
-    if (newPin !== newPinConfirm) { setPinError('PINs stimmen nicht überein'); return; }
-    updateProfile(profileId, { pin: newPin });
-    setNewPin(''); setNewPinConfirm(''); setPinError('');
-    setShowNewPin(null);
-    setPinSuccess(profileId);
-    setTimeout(() => setPinSuccess(''), 2000);
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
-        <div className="flex gap-3">
-          <Shield className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-amber-700">
-            Hier können alle Benutzerprofile verwaltet werden. Jedes Profil hat seinen eigenen PIN und sieht nur seine eigenen Daten.
-          </p>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between p-4 border-b border-slate-100">
-          <h2 className="font-semibold text-slate-800">Alle Benutzer ({profiles.length})</h2>
-          <Button size="sm" icon={<Plus className="w-3 h-3" />} onClick={handleAddProfile}>
-            Hinzufügen
-          </Button>
-        </div>
-        <div className="divide-y divide-slate-50">
-          {profiles.map((profile) => (
-            <div key={profile.id} className="p-4">
-              <div className="flex items-center gap-3">
-                {profile.logo ? (
-                  <img src={profile.logo} alt="" className="w-10 h-10 rounded-xl object-cover flex-shrink-0 border border-slate-200" />
-                ) : (
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold flex-shrink-0">
-                    {profile.internalName.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium text-slate-900 truncate">{profile.internalName}</p>
-                    {profile.id === loggedInProfileId && (
-                      <span className="text-xs text-brand-600 font-medium px-2 py-0.5 bg-brand-50 rounded-full flex-shrink-0">Ich</span>
-                    )}
-                  </div>
-                  {profile.companyName && (
-                    <p className="text-xs text-slate-400 truncate">{profile.companyName}</p>
-                  )}
-                </div>
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <button
-                    onClick={() => { setShowNewPin(showNewPin === profile.id ? null : profile.id); setNewPin(''); setNewPinConfirm(''); setPinError(''); }}
-                    className="text-xs text-slate-500 hover:text-brand-600 px-2 py-1.5 rounded-lg hover:bg-brand-50 border border-slate-200 font-medium"
-                  >
-                    PIN
-                  </button>
-                  <button onClick={() => duplicateProfile(profile.id)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400">
-                    <Copy className="w-4 h-4" />
-                  </button>
-                  {profiles.length > 1 && (
-                    <button onClick={() => setDeleteId(profile.id)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* PIN setzen */}
-              {showNewPin === profile.id && (
-                <div className="mt-3 p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                  <p className="text-xs font-medium text-slate-600">PIN für „{profile.internalName}" setzen</p>
-                  <Input
-                    type="password"
-                    value={newPin}
-                    onChange={(e) => { setNewPin(e.target.value); setPinError(''); }}
-                    placeholder="Neuer PIN (mind. 4 Zeichen)"
-                    maxLength={20}
-                  />
-                  <Input
-                    type="password"
-                    value={newPinConfirm}
-                    onChange={(e) => { setNewPinConfirm(e.target.value); setPinError(''); }}
-                    placeholder="PIN wiederholen"
-                    maxLength={20}
-                  />
-                  {pinError && <p className="text-xs text-red-500">{pinError}</p>}
-                  <Button size="sm" fullWidth onClick={() => handleSetPin(profile.id)} disabled={!newPin || !newPinConfirm}>
-                    PIN speichern
-                  </Button>
-                </div>
-              )}
-              {pinSuccess === profile.id && (
-                <div className="mt-2 flex items-center gap-1.5 text-green-600 text-xs">
-                  <CheckCircle className="w-3.5 h-3.5" /> PIN gesetzt
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <ConfirmDialog
-        isOpen={!!deleteId}
-        onClose={() => setDeleteId(null)}
-        onConfirm={() => { if (deleteId) deleteProfile(deleteId); }}
-        title="Profil löschen"
-        message="Möchten Sie dieses Profil wirklich löschen? Alle Daten dieses Profils bleiben erhalten, sind aber keinem Benutzer mehr zugeordnet."
-      />
     </div>
   );
 }
