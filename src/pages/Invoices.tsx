@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import {
   Plus, Search, FileText, MoreVertical, Edit2, Trash2, Copy,
   Download, CheckCircle, XCircle, Eye, ChevronDown, Trash,
+  Share2, Receipt as ReceiptIcon, Mail, MessageCircle,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import Button from '../components/common/Button';
@@ -11,12 +12,12 @@ import ConfirmDialog from '../components/common/ConfirmDialog';
 import EmptyState from '../components/common/EmptyState';
 import { FormField, Input, Textarea, Select } from '../components/common/FormField';
 import TemplateTextSelector from '../components/templates/TemplateTextSelector';
-import { Invoice, InvoiceItem, InvoiceStatus } from '../types';
+import { Invoice, InvoiceItem, InvoiceStatus, Receipt, PaymentMethod } from '../types';
 import {
   formatCurrency, formatDate, getStatusColor, getStatusLabel,
   calculateLineItem, calculateInvoiceTotals, todayISO, generateId,
 } from '../utils/helpers';
-import { generateInvoicePDF } from '../utils/pdf';
+import { generateInvoicePDF, getInvoicePdfBlob } from '../utils/pdf';
 
 const VAT_RATES = [0, 7, 19] as const;
 const UNITS = ['Stk.', 'Std.', 'Tage', 'km', 'Pauschal', 'm²', 'Liter', 'kg'];
@@ -63,19 +64,52 @@ function emptyItem(): InvoiceItem {
   };
 }
 
+type PageTab = 'rechnungen' | 'quittungen';
+
+const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
+  { value: 'bar', label: 'Bar' },
+  { value: 'überweisung', label: 'Überweisung' },
+  { value: 'karte', label: 'Kartenzahlung' },
+  { value: 'sonstige', label: 'Sonstige' },
+];
+
 export default function Invoices() {
   const [searchParams] = useSearchParams();
   const {
     profiles, loggedInProfileId, customers, invoices, articles,
-    addInvoice, updateInvoice, deleteInvoice, duplicateInvoice,
+    receipts, addInvoice, updateInvoice, deleteInvoice, duplicateInvoice,
+    addReceipt, updateReceipt, deleteReceipt,
   } = useStore();
 
+  const [pageTab, setPageTab] = useState<PageTab>('rechnungen');
   const [search, setSearch] = useState('');
   const [filterProfile, setFilterProfile] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState<InvoiceFormData>(emptyForm(loggedInProfileId || ''));
+
+  // Share state
+  const [shareBlobUrl, setShareBlobUrl] = useState<string | null>(null);
+  const [shareFilename, setShareFilename] = useState('');
+  const [shareSubject, setShareSubject] = useState('');
+  const [shareBody, setShareBody] = useState('');
+  const [shareEmail, setShareEmail] = useState('');
+
+  // Receipt form state
+  const [showReceiptForm, setShowReceiptForm] = useState(false);
+  const [receiptEditId, setReceiptEditId] = useState<string | null>(null);
+  const [deleteReceiptId, setDeleteReceiptId] = useState<string | null>(null);
+  const [receiptForm, setReceiptForm] = useState<Omit<Receipt, 'id' | 'createdAt' | 'updatedAt' | 'receiptNumber'>>({
+    profileId: loggedInProfileId || '',
+    invoiceId: null,
+    date: todayISO(),
+    amount: 0,
+    payerName: '',
+    purpose: '',
+    paymentMethod: 'bar',
+    notes: '',
+  });
 
   useEffect(() => {
     if (searchParams.get('new') === '1') {
@@ -176,8 +210,65 @@ export default function Invoices() {
     if (profile) generateInvoicePDF(invoice, profile, customer);
   };
 
+  const handleShare = (invoice: Invoice) => {
+    const profile = profiles.find((p) => p.id === invoice.profileId);
+    const customer = customers.find((c) => c.id === invoice.customerId) || null;
+    if (!profile) return;
+    const blob = getInvoicePdfBlob(invoice, profile, customer);
+    const url = URL.createObjectURL(blob);
+    const cname = customer?.companyName || '';
+    setShareBlobUrl(url);
+    setShareFilename(`Rechnung-${invoice.invoiceNumber}.pdf`);
+    setShareSubject(`Rechnung ${invoice.invoiceNumber}${cname ? ` – ${cname}` : ''}`);
+    setShareBody(`Sehr geehrte Damen und Herren,\n\nerbei finden Sie die Rechnung ${invoice.invoiceNumber} über ${formatCurrency(invoice.grossTotal)}.\n\nMit freundlichen Grüßen\n${profile.personName || profile.companyName}`);
+    setShareEmail(customer?.email || '');
+  };
+
+  const closeShare = () => {
+    if (shareBlobUrl) URL.revokeObjectURL(shareBlobUrl);
+    setShareBlobUrl(null);
+  };
+
+  const handleCreateReceipt = (invoice: Invoice) => {
+    const customer = customers.find((c) => c.id === invoice.customerId);
+    setReceiptEditId(null);
+    setReceiptForm({
+      profileId: invoice.profileId,
+      invoiceId: invoice.id,
+      date: todayISO(),
+      amount: invoice.grossTotal,
+      payerName: customer?.companyName || '',
+      purpose: `Rechnung ${invoice.invoiceNumber}`,
+      paymentMethod: 'bar',
+      notes: '',
+    });
+    setShowReceiptForm(true);
+  };
+
+  const handleEditReceipt = (receipt: Receipt) => {
+    setReceiptEditId(receipt.id);
+    const { id, createdAt, updatedAt, receiptNumber, ...rest } = receipt;
+    setReceiptForm(rest);
+    setShowReceiptForm(true);
+  };
+
+  const handleSaveReceipt = () => {
+    if (receiptEditId) {
+      updateReceipt(receiptEditId, receiptForm);
+    } else {
+      addReceipt(receiptForm);
+    }
+    setShowReceiptForm(false);
+    setReceiptEditId(null);
+  };
+
   const profileName = (id: string) => profiles.find((p) => p.id === id)?.internalName || '-';
   const customerName = (id: string) => customers.find((c) => c.id === id)?.companyName || '-';
+
+  const myReceipts = useMemo(
+    () => receipts.filter((r) => r.profileId === loggedInProfileId),
+    [receipts, loggedInProfileId]
+  );
 
   return (
     <div className="space-y-4">
@@ -185,64 +276,139 @@ export default function Invoices() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Rechnungen</h1>
-          <p className="text-sm text-slate-500 mt-0.5">{filtered.length} Rechnungen</p>
+          <p className="text-sm text-slate-500 mt-0.5">{filtered.length} Rechnungen · {myReceipts.length} Quittungen</p>
         </div>
         <Button icon={<Plus className="w-4 h-4" />} onClick={() => openForm()}>
           Neue Rechnung
         </Button>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Suchen..."
-            className="w-full h-10 pl-9 pr-4 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
-          />
-        </div>
-        {profiles.length > 1 && (
-          <select
-            value={filterProfile}
-            onChange={(e) => setFilterProfile(e.target.value)}
-            className="h-10 px-3 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-          >
-            <option value="">Alle</option>
-            {profiles.map((p) => (
-              <option key={p.id} value={p.id}>{p.internalName}</option>
-            ))}
-          </select>
-        )}
+      {/* Page tabs */}
+      <div className="flex gap-1 bg-slate-100 rounded-xl p-1 w-fit">
+        <button
+          onClick={() => setPageTab('rechnungen')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${pageTab === 'rechnungen' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+          <FileText className="w-4 h-4" /> Rechnungen
+        </button>
+        <button
+          onClick={() => setPageTab('quittungen')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${pageTab === 'quittungen' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+          <ReceiptIcon className="w-4 h-4" /> Quittungen
+        </button>
       </div>
 
-      {/* List */}
-      {filtered.length === 0 ? (
-        <EmptyState
-          icon={<FileText className="w-8 h-8" />}
-          title="Noch keine Rechnungen"
-          description="Erstellen Sie Ihre erste Rechnung."
-          action={{ label: '+ Neue Rechnung', onClick: () => openForm() }}
-        />
-      ) : (
-        <div className="space-y-2">
-          {filtered.map((inv) => (
-            <InvoiceCard
-              key={inv.id}
-              invoice={inv}
-              customerName={customerName(inv.customerId)}
-              profileName={profileName(inv.profileId)}
-              onEdit={() => openForm(inv)}
-              onDelete={() => setDeleteId(inv.id)}
-              onDuplicate={() => duplicateInvoice(inv.id)}
-              onPDF={() => handlePDF(inv)}
-              onMarkPaid={() => updateInvoice(inv.id, { status: 'paid' })}
-              onMarkOpen={() => updateInvoice(inv.id, { status: 'open' })}
+      {pageTab === 'rechnungen' && (
+        <>
+          {/* Filters */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Suchen..."
+                className="w-full h-10 pl-9 pr-4 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+              />
+            </div>
+            {profiles.length > 1 && (
+              <select
+                value={filterProfile}
+                onChange={(e) => setFilterProfile(e.target.value)}
+                className="h-10 px-3 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+              >
+                <option value="">Alle</option>
+                {profiles.map((p) => (
+                  <option key={p.id} value={p.id}>{p.internalName}</option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* List */}
+          {filtered.length === 0 ? (
+            <EmptyState
+              icon={<FileText className="w-8 h-8" />}
+              title="Noch keine Rechnungen"
+              description="Erstellen Sie Ihre erste Rechnung."
+              action={{ label: '+ Neue Rechnung', onClick: () => openForm() }}
             />
-          ))}
-        </div>
+          ) : (
+            <div className="space-y-2">
+              {filtered.map((inv) => (
+                <InvoiceCard
+                  key={inv.id}
+                  invoice={inv}
+                  customerName={customerName(inv.customerId)}
+                  profileName={profileName(inv.profileId)}
+                  onEdit={() => openForm(inv)}
+                  onDelete={() => setDeleteId(inv.id)}
+                  onDuplicate={() => duplicateInvoice(inv.id)}
+                  onPDF={() => handlePDF(inv)}
+                  onShare={() => handleShare(inv)}
+                  onCreateReceipt={() => handleCreateReceipt(inv)}
+                  onMarkPaid={() => updateInvoice(inv.id, { status: 'paid' })}
+                  onMarkOpen={() => updateInvoice(inv.id, { status: 'open' })}
+                />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {pageTab === 'quittungen' && (
+        <>
+          <div className="flex justify-end">
+            <Button icon={<Plus className="w-4 h-4" />} onClick={() => {
+              setReceiptEditId(null);
+              setReceiptForm({ profileId: loggedInProfileId || '', invoiceId: null, date: todayISO(), amount: 0, payerName: '', purpose: '', paymentMethod: 'bar', notes: '' });
+              setShowReceiptForm(true);
+            }}>
+              Neue Quittung
+            </Button>
+          </div>
+          {myReceipts.length === 0 ? (
+            <EmptyState
+              icon={<ReceiptIcon className="w-8 h-8" />}
+              title="Noch keine Quittungen"
+              description="Erstellen Sie Quittungen für Ihre Rechnungen oder manuell."
+            />
+          ) : (
+            <div className="space-y-2">
+              {myReceipts.map((r) => {
+                const invoice = invoices.find((i) => i.id === r.invoiceId);
+                return (
+                  <div key={r.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
+                        <ReceiptIcon className="w-5 h-5 text-green-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-slate-900">{r.receiptNumber}</p>
+                        <p className="text-sm text-slate-500 truncate">{r.payerName || '–'} · {r.purpose || '–'}</p>
+                        {invoice && <p className="text-xs text-slate-400">Rechnung: {invoice.invoiceNumber}</p>}
+                      </div>
+                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                        <span className="font-bold text-slate-900">{formatCurrency(r.amount)}</span>
+                        <span className="text-xs text-slate-400">{formatDate(r.date)}</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 mt-3 pt-3 border-t border-slate-50">
+                      <button onClick={() => handleEditReceipt(r)} className="flex items-center gap-1.5 text-xs text-brand-500 hover:text-brand-700">
+                        <Edit2 className="w-3.5 h-3.5" /> Bearbeiten
+                      </button>
+                      <button onClick={() => setDeleteReceiptId(r.id)} className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 ml-auto">
+                        <Trash2 className="w-3.5 h-3.5" /> Löschen
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
 
       {/* Invoice Form Modal */}
@@ -515,6 +681,79 @@ export default function Invoices() {
         title="Rechnung löschen"
         message="Möchten Sie diese Rechnung wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden."
       />
+
+      <ConfirmDialog
+        isOpen={!!deleteReceiptId}
+        onClose={() => setDeleteReceiptId(null)}
+        onConfirm={() => { if (deleteReceiptId) deleteReceipt(deleteReceiptId); }}
+        title="Quittung löschen"
+        message="Möchten Sie diese Quittung wirklich löschen?"
+      />
+
+      {/* Share modal */}
+      <Modal isOpen={!!shareBlobUrl} onClose={closeShare} title="Rechnung teilen" size="sm"
+        footer={<Button variant="secondary" fullWidth onClick={closeShare}>Schließen</Button>}
+      >
+        <div className="space-y-3">
+          <button onClick={() => { const a = document.createElement('a'); a.href = shareBlobUrl!; a.download = shareFilename; a.click(); }}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-brand-600 text-white font-medium hover:bg-brand-700 transition-colors">
+            <Download className="w-5 h-5" /> PDF herunterladen
+          </button>
+          <div className="space-y-2">
+            <input type="email" value={shareEmail} onChange={(e) => setShareEmail(e.target.value)}
+              placeholder="Empfänger E-Mail (optional)"
+              className="w-full h-10 px-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            <button onClick={() => window.location.href = `mailto:${shareEmail}?subject=${encodeURIComponent(shareSubject)}&body=${encodeURIComponent(shareBody)}`}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition-colors">
+              <Mail className="w-5 h-5 text-blue-500" /> Per E-Mail senden
+            </button>
+          </div>
+          <button onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(shareSubject + '\n\n' + shareBody)}`, '_blank')}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition-colors">
+            <MessageCircle className="w-5 h-5 text-green-500" /> Per WhatsApp teilen
+          </button>
+          <p className="text-xs text-slate-400 text-center">PDF herunterladen, dann in WhatsApp/E-Mail anhängen</p>
+        </div>
+      </Modal>
+
+      {/* Receipt form modal */}
+      <Modal isOpen={showReceiptForm} onClose={() => setShowReceiptForm(false)}
+        title={receiptEditId ? 'Quittung bearbeiten' : 'Quittung erstellen'} size="md"
+        footer={
+          <div className="flex gap-3">
+            <Button variant="secondary" onClick={() => setShowReceiptForm(false)}>Abbrechen</Button>
+            <Button fullWidth onClick={handleSaveReceipt} disabled={!receiptForm.amount || !receiptForm.payerName}>
+              {receiptEditId ? 'Speichern' : 'Quittung erstellen'}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <FormField label="Datum" required>
+              <Input type="date" value={receiptForm.date} onChange={(e) => setReceiptForm({ ...receiptForm, date: e.target.value })} />
+            </FormField>
+            <FormField label="Betrag (€)" required>
+              <Input type="number" min="0" step="0.01" value={receiptForm.amount}
+                onChange={(e) => setReceiptForm({ ...receiptForm, amount: parseFloat(e.target.value) || 0 })} />
+            </FormField>
+          </div>
+          <FormField label="Empfangen von" required>
+            <Input value={receiptForm.payerName} onChange={(e) => setReceiptForm({ ...receiptForm, payerName: e.target.value })} placeholder="Name / Firma" />
+          </FormField>
+          <FormField label="Verwendungszweck">
+            <Input value={receiptForm.purpose} onChange={(e) => setReceiptForm({ ...receiptForm, purpose: e.target.value })} placeholder="z.B. Rechnung RE-10001" />
+          </FormField>
+          <FormField label="Zahlungsart">
+            <Select value={receiptForm.paymentMethod} onChange={(e) => setReceiptForm({ ...receiptForm, paymentMethod: e.target.value as PaymentMethod })}>
+              {PAYMENT_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+            </Select>
+          </FormField>
+          <FormField label="Bemerkung">
+            <Textarea value={receiptForm.notes} onChange={(e) => setReceiptForm({ ...receiptForm, notes: e.target.value })} rows={2} placeholder="Optional..." />
+          </FormField>
+        </div>
+      </Modal>
     </div>
   );
 }
@@ -527,13 +766,15 @@ interface InvoiceCardProps {
   onDelete: () => void;
   onDuplicate: () => void;
   onPDF: () => void;
+  onShare: () => void;
+  onCreateReceipt: () => void;
   onMarkPaid: () => void;
   onMarkOpen: () => void;
 }
 
 function InvoiceCard({
   invoice, customerName, profileName,
-  onEdit, onDelete, onDuplicate, onPDF, onMarkPaid, onMarkOpen,
+  onEdit, onDelete, onDuplicate, onPDF, onShare, onCreateReceipt, onMarkPaid, onMarkOpen,
 }: InvoiceCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -569,6 +810,12 @@ function InvoiceCard({
                       </button>
                       <button onClick={() => { onPDF(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
                         <Download className="w-4 h-4" /> PDF exportieren
+                      </button>
+                      <button onClick={() => { onShare(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                        <Share2 className="w-4 h-4" /> Teilen
+                      </button>
+                      <button onClick={() => { onCreateReceipt(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                        <ReceiptIcon className="w-4 h-4" /> Quittung erstellen
                       </button>
                       <button onClick={() => { onDuplicate(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
                         <Copy className="w-4 h-4" /> Duplizieren

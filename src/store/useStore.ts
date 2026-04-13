@@ -1,13 +1,14 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import {
-  Profile, Customer, Article, Template, Invoice, DeliveryNote, Letter,
+  Profile, Customer, Article, Template, Invoice, DeliveryNote, Letter, Receipt, Attachment,
 } from '../types';
 import {
   generateId,
   generateInvoiceNumber,
   generateDeliveryNoteNumber,
   generateCustomerNumber,
+  generateReceiptNumber,
   todayISO,
 } from '../utils/helpers';
 
@@ -15,7 +16,7 @@ import {
 let syncTimer: ReturnType<typeof setTimeout> | null = null;
 
 type CloudSnapshot = Pick<AppState,
-  'profiles' | 'customers' | 'articles' | 'templates' | 'invoices' | 'deliveryNotes' | 'letters'
+  'profiles' | 'customers' | 'articles' | 'templates' | 'invoices' | 'deliveryNotes' | 'letters' | 'receipts' | 'attachments'
 >;
 
 // ── Interface ─────────────────────────────────────────────────────────────────
@@ -33,6 +34,8 @@ interface AppState {
   invoices: Invoice[];
   deliveryNotes: DeliveryNote[];
   letters: Letter[];
+  receipts: Receipt[];
+  attachments: Attachment[];
 
   // ── Auth actions (new) ───────────────────────────────────────────────────────
   restoreSession: () => Promise<void>;
@@ -42,6 +45,7 @@ interface AppState {
   ) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   changePassword: (newPin: string) => Promise<{ success: boolean; error?: string }>;
+  resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
 
   // ── Legacy (kept so existing pages compile unchanged) ────────────────────────
   loginWithProfile: (profileId: string, pin: string) => boolean;
@@ -84,6 +88,15 @@ interface AppState {
   updateLetter: (id: string, data: Partial<Letter>) => void;
   deleteLetter: (id: string) => void;
 
+  // ── Receipt ──────────────────────────────────────────────────────────────────
+  addReceipt: (data: Omit<Receipt, 'id' | 'createdAt' | 'updatedAt' | 'receiptNumber'>) => Receipt;
+  updateReceipt: (id: string, data: Partial<Receipt>) => void;
+  deleteReceipt: (id: string) => void;
+
+  // ── Attachment ───────────────────────────────────────────────────────────────
+  addAttachment: (data: Omit<Attachment, 'id' | 'createdAt'>) => Attachment;
+  deleteAttachment: (id: string) => void;
+
   // ── Export / Import ──────────────────────────────────────────────────────────
   exportData: () => string;
   importData: (json: string) => boolean;
@@ -119,6 +132,8 @@ export const useStore = create<AppState>()((set, get) => {
       invoices:      row.data?.invoices      ?? [],
       deliveryNotes: row.data?.deliveryNotes ?? [],
       letters:       row.data?.letters       ?? [],
+      receipts:      row.data?.receipts      ?? [],
+      attachments:   row.data?.attachments   ?? [],
     };
   };
 
@@ -139,6 +154,8 @@ export const useStore = create<AppState>()((set, get) => {
     invoices:      [],
     deliveryNotes: [],
     letters:       [],
+    receipts:      [],
+    attachments:   [],
 
     // ── Auth ──────────────────────────────────────────────────────────────────
 
@@ -221,12 +238,20 @@ export const useStore = create<AppState>()((set, get) => {
         supabaseUserId: null,
         loggedInProfileId: null,
         profiles: [], customers: [], articles: [], templates: [],
-        invoices: [], deliveryNotes: [], letters: [],
+        invoices: [], deliveryNotes: [], letters: [], receipts: [], attachments: [],
       });
     },
 
     changePassword: async (newPin) => {
       const { error } = await supabase.auth.updateUser({ password: newPin });
+      if (error) return { success: false, error: translateError(error.message) };
+      return { success: true };
+    },
+
+    resetPassword: async (email) => {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/`,
+      });
       if (error) return { success: false, error: translateError(error.message) };
       return { success: true };
     },
@@ -476,12 +501,61 @@ export const useStore = create<AppState>()((set, get) => {
       scheduleSync();
     },
 
+    // ── Receipt ───────────────────────────────────────────────────────────────
+
+    addReceipt: (data) => {
+      const profile = get().profiles.find((p) => p.id === data.profileId);
+      if (!profile) throw new Error('Profile not found');
+      const counter = (profile.receiptCounter ?? 0) + 1;
+      const receipt: Receipt = {
+        ...data,
+        id: generateId(),
+        receiptNumber: generateReceiptNumber(counter),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      set((s) => ({
+        receipts: [...s.receipts, receipt],
+        profiles: s.profiles.map((p) => p.id === data.profileId ? { ...p, receiptCounter: counter } : p),
+      }));
+      scheduleSync();
+      return receipt;
+    },
+
+    updateReceipt: (id, data) => {
+      set((s) => ({
+        receipts: s.receipts.map((r) =>
+          r.id === id ? { ...r, ...data, updatedAt: new Date().toISOString() } : r
+        ),
+      }));
+      scheduleSync();
+    },
+
+    deleteReceipt: (id) => {
+      set((s) => ({ receipts: s.receipts.filter((r) => r.id !== id) }));
+      scheduleSync();
+    },
+
+    // ── Attachment ────────────────────────────────────────────────────────────
+
+    addAttachment: (data) => {
+      const attachment: Attachment = { ...data, id: generateId(), createdAt: new Date().toISOString() };
+      set((s) => ({ attachments: [...s.attachments, attachment] }));
+      scheduleSync();
+      return attachment;
+    },
+
+    deleteAttachment: (id) => {
+      set((s) => ({ attachments: s.attachments.filter((a) => a.id !== id) }));
+      scheduleSync();
+    },
+
     // ── Export / Import ───────────────────────────────────────────────────────
 
     exportData: () => {
-      const { profiles, customers, articles, templates, invoices, deliveryNotes, letters } = get();
+      const { profiles, customers, articles, templates, invoices, deliveryNotes, letters, receipts, attachments } = get();
       return JSON.stringify(
-        { profiles, customers, articles, templates, invoices, deliveryNotes, letters,
+        { profiles, customers, articles, templates, invoices, deliveryNotes, letters, receipts, attachments,
           exportedAt: new Date().toISOString() },
         null, 2
       );
@@ -498,6 +572,8 @@ export const useStore = create<AppState>()((set, get) => {
           invoices:      d.invoices      || [],
           deliveryNotes: d.deliveryNotes || [],
           letters:       d.letters       || [],
+          receipts:      d.receipts      || [],
+          attachments:   d.attachments   || [],
         });
         scheduleSync();
         return true;
@@ -510,14 +586,14 @@ export const useStore = create<AppState>()((set, get) => {
 
     _syncToCloud: async () => {
       const { supabaseUserId, profiles, customers, articles, templates,
-              invoices, deliveryNotes, letters } = get();
+              invoices, deliveryNotes, letters, receipts, attachments } = get();
       if (!supabaseUserId) return;
 
       const { error } = await supabase
         .from('user_data')
         .upsert({
           user_id:    supabaseUserId,
-          data:       { profiles, customers, articles, templates, invoices, deliveryNotes, letters },
+          data:       { profiles, customers, articles, templates, invoices, deliveryNotes, letters, receipts, attachments },
           updated_at: new Date().toISOString(),
         }, { onConflict: 'user_id' });
 
@@ -541,13 +617,13 @@ function makeBlankProfile(id: string, internalName: string): Profile {
     logo: null, signature: null,
     signatureOnInvoice: false, signatureOnDeliveryNote: false, signatureOnLetter: false,
     pdfFooter: '',
-    invoiceCounter: 0, deliveryNoteCounter: 0,
+    invoiceCounter: 0, deliveryNoteCounter: 0, receiptCounter: 0,
     createdAt: new Date().toISOString(),
   };
 }
 
 function emptySnapshot(profiles: Profile[]): CloudSnapshot {
-  return { profiles, customers: [], articles: [], templates: [], invoices: [], deliveryNotes: [], letters: [] };
+  return { profiles, customers: [], articles: [], templates: [], invoices: [], deliveryNotes: [], letters: [], receipts: [], attachments: [] };
 }
 
 function translateError(msg: string): string {

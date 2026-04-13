@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Invoice, DeliveryNote, Letter, Profile, Customer } from '../types';
+import { Invoice, DeliveryNote, Letter, Profile, Customer, Receipt } from '../types';
 import { formatCurrency, formatDate } from './helpers';
 
 // ── Translation table ─────────────────────────────────────────────────────────
@@ -628,4 +628,140 @@ export function generateLetterPDF(
 
   drawFooter(doc, profile);
   doc.save(`${letter.title || 'Schreiben'}.pdf`);
+}
+
+// ── Receipt PDF ───────────────────────────────────────────────────────────────
+
+const PAYMENT_METHOD_LABEL: Record<string, string> = {
+  bar: 'Bar',
+  überweisung: 'Überweisung',
+  karte: 'Karte',
+  sonstige: 'Sonstige',
+};
+
+export function generateReceiptPDF(receipt: Receipt, profile: Profile): void {
+  buildReceiptDoc(receipt, profile).save(`Quittung-${receipt.receiptNumber}.pdf`);
+}
+
+export function getReceiptPdfBlob(receipt: Receipt, profile: Profile): Blob {
+  return buildReceiptDoc(receipt, profile).output('blob');
+}
+
+function buildReceiptDoc(receipt: Receipt, profile: Profile): jsPDF {
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  let y = drawBrandHeader(doc, profile);
+  y += 6;
+
+  // Title row
+  fill(doc, PRIMARY);
+  doc.setFillColor(PRIMARY[0], PRIMARY[1], PRIMARY[2]);
+  doc.roundedRect(ML, y, BODY_W, 12, 2, 2, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(13);
+  text(doc, WHITE);
+  doc.text('QUITTUNG', ML + 4, y + 8);
+  doc.setFontSize(10);
+  doc.text(receipt.receiptNumber, PAGE_W - MR - 4, y + 8, { align: 'right' });
+  y += 18;
+
+  // Date line
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  text(doc, SLATE_500);
+  doc.text(`Datum: ${formatDate(receipt.date)}`, PAGE_W - MR, y, { align: 'right' });
+  y += 10;
+
+  // Info box
+  const rows: [string, string][] = [
+    ['Empfangen von', receipt.payerName || '–'],
+    ['Betrag', formatCurrency(receipt.amount)],
+    ['Verwendungszweck', receipt.purpose || '–'],
+    ['Zahlungsart', PAYMENT_METHOD_LABEL[receipt.paymentMethod] || receipt.paymentMethod],
+  ];
+  if (receipt.notes) rows.push(['Bemerkung', receipt.notes]);
+
+  rows.forEach(([label, value]) => {
+    fill(doc, SLATE_100);
+    doc.setFillColor(SLATE_100[0], SLATE_100[1], SLATE_100[2]);
+    doc.roundedRect(ML, y, BODY_W, 8, 1, 1, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    text(doc, SLATE_500);
+    doc.text(label, ML + 3, y + 5.5);
+    doc.setFont('helvetica', 'normal');
+    text(doc, SLATE_900);
+    const valLines = doc.splitTextToSize(value, BODY_W * 0.6);
+    doc.text(valLines, ML + 55, y + 5.5);
+    y += 10;
+  });
+
+  y += 8;
+
+  // Signature
+  if (profile.signature) {
+    drawSignature(doc, profile, y);
+    y += 28;
+  }
+
+  drawFooter(doc, profile);
+  return doc;
+}
+
+// ── PDF blob helpers (for sharing) ────────────────────────────────────────────
+
+export function getInvoicePdfBlob(invoice: Invoice, profile: Profile, customer: Customer): Blob {
+  // We need to re-build without saving — wrap the existing function approach
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  // Re-use the internal builder by generating and capturing
+  // Since generateInvoicePDF calls doc.save(), we use a workaround:
+  // temporarily override save, generate, then restore.
+  const original = jsPDF.prototype.save;
+  let capturedBlob: Blob | null = null;
+  jsPDF.prototype.save = function () {
+    capturedBlob = this.output('blob');
+  } as unknown as typeof jsPDF.prototype.save;
+  generateInvoicePDF(invoice, profile, customer);
+  jsPDF.prototype.save = original;
+  return capturedBlob ?? doc.output('blob');
+}
+
+export function getDeliveryNotePdfBlob(dn: DeliveryNote, profile: Profile, customer: Customer): Blob {
+  const original = jsPDF.prototype.save;
+  let capturedBlob: Blob | null = null;
+  jsPDF.prototype.save = function () {
+    capturedBlob = this.output('blob');
+  } as unknown as typeof jsPDF.prototype.save;
+  generateDeliveryNotePDF(dn, profile, customer);
+  jsPDF.prototype.save = original;
+  return capturedBlob ?? new jsPDF().output('blob');
+}
+
+export function getLetterPdfBlob(letter: Letter, profile: Profile, customer: Customer | null): Blob {
+  const original = jsPDF.prototype.save;
+  let capturedBlob: Blob | null = null;
+  jsPDF.prototype.save = function () {
+    capturedBlob = this.output('blob');
+  } as unknown as typeof jsPDF.prototype.save;
+  generateLetterPDF(letter, profile, customer);
+  jsPDF.prototype.save = original;
+  return capturedBlob ?? new jsPDF().output('blob');
+}
+
+/** Share a PDF blob via Web Share API (mobile) or fallback to download + WhatsApp/Email modal trigger. */
+export async function sharePdfBlob(
+  blob: Blob,
+  filename: string,
+  title: string,
+  fallback: (url: string) => void,
+): Promise<void> {
+  const file = new File([blob], filename, { type: 'application/pdf' });
+  if (typeof navigator !== 'undefined' && navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title });
+      return;
+    } catch { /* user cancelled or not supported */ }
+  }
+  // Fallback: create object URL and pass to caller for manual share options
+  const url = URL.createObjectURL(blob);
+  fallback(url);
 }

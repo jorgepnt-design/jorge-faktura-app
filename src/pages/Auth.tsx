@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { ChevronLeft, UserPlus, Eye, EyeOff } from 'lucide-react';
+import { ChevronLeft, UserPlus, Eye, EyeOff, KeyRound, CheckCircle } from 'lucide-react';
 import { useStore } from '../store/useStore';
 
-type Step = 'login' | 'register';
+type Step = 'login' | 'register' | 'forgot';
 
 export default function Auth() {
-  const { loginWithEmail, registerWithEmail, isLoading } = useStore();
+  const { loginWithEmail, registerWithEmail, resetPassword, isLoading } = useStore();
   const [step, setStep] = useState<Step>('login');
 
   // ── Login state ────────────────────────────────────────────────────────────
@@ -21,6 +21,12 @@ export default function Auth() {
   const [regPinConfirm, setRegPinConfirm] = useState('');
   const [showRegPin, setShowRegPin]     = useState(false);
   const [regError, setRegError]         = useState('');
+
+  // ── Forgot state ───────────────────────────────────────────────────────────
+  const [forgotEmail, setForgotEmail]   = useState('');
+  const [forgotError, setForgotError]   = useState('');
+  const [forgotSent, setForgotSent]     = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,10 +50,29 @@ export default function Auth() {
     if (!result.success) setRegError(result.error || 'Registrierung fehlgeschlagen.');
   };
 
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotError('');
+    if (!forgotEmail.trim()) { setForgotError('Bitte eine E-Mail-Adresse eingeben.'); return; }
+    setForgotLoading(true);
+    const result = await resetPassword(forgotEmail.trim());
+    setForgotLoading(false);
+    if (!result.success) {
+      setForgotError(result.error || 'Fehler beim Senden der E-Mail.');
+    } else {
+      setForgotSent(true);
+    }
+  };
+
   const goToRegister = () => {
     setRegName(''); setRegEmail(''); setRegPin(''); setRegPinConfirm('');
     setRegError(''); setShowRegPin(false);
     setStep('register');
+  };
+
+  const goToForgot = () => {
+    setForgotEmail(email); setForgotError(''); setForgotSent(false);
+    setStep('forgot');
   };
 
   const goBack = () => {
@@ -88,7 +113,16 @@ export default function Auth() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">PIN</label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-sm font-medium text-slate-700">PIN</label>
+                    <button
+                      type="button"
+                      onClick={goToForgot}
+                      className="text-xs text-brand-500 hover:text-brand-700 transition-colors"
+                    >
+                      Passwort vergessen?
+                    </button>
+                  </div>
                   <div className="relative">
                     <input
                       type={showPin ? 'text' : 'password'}
@@ -135,6 +169,76 @@ export default function Auth() {
                   Neues Konto erstellen
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* ── Passwort vergessen ────────────────────────────────────────────── */}
+          {step === 'forgot' && (
+            <div className="p-6">
+              <button
+                onClick={goBack}
+                className="flex items-center gap-1 text-sm text-slate-400 hover:text-slate-600 mb-5 transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" /> Zurück
+              </button>
+
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
+                  <KeyRound className="w-5 h-5 text-amber-500" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-slate-900">Passwort zurücksetzen</h2>
+                  <p className="text-xs text-slate-400">Link per E-Mail erhalten</p>
+                </div>
+              </div>
+
+              {forgotSent ? (
+                <div className="text-center py-4">
+                  <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
+                  <p className="font-semibold text-slate-900 mb-1">E-Mail gesendet!</p>
+                  <p className="text-sm text-slate-500 mb-5">
+                    Bitte prüfen Sie Ihr Postfach und klicken Sie auf den Link zum Zurücksetzen des Passworts.
+                  </p>
+                  <button onClick={goBack} className="text-sm text-brand-600 hover:text-brand-700 font-medium">
+                    Zurück zur Anmeldung
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleForgot} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                      Registrierte E-Mail-Adresse
+                    </label>
+                    <input
+                      type="email"
+                      value={forgotEmail}
+                      onChange={(e) => { setForgotEmail(e.target.value); setForgotError(''); }}
+                      placeholder="ihre@email.de"
+                      autoFocus
+                      className="w-full h-11 px-4 rounded-xl border border-slate-300 text-sm
+                        focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {forgotError && (
+                    <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
+                      {forgotError}
+                    </p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={!forgotEmail.trim() || forgotLoading}
+                    className="w-full h-12 rounded-xl bg-brand-600 text-white font-semibold text-base
+                      hover:bg-brand-700 active:bg-brand-800 transition-colors
+                      disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {forgotLoading
+                      ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
+                      : 'Reset-Link senden'}
+                  </button>
+                </form>
+              )}
             </div>
           )}
 

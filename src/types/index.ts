@@ -26,6 +26,7 @@ export interface Profile {
   pdfFooter: string;
   invoiceCounter: number;
   deliveryNoteCounter: number;
+  receiptCounter: number;
   createdAt: string;
 }
 
@@ -162,4 +163,31 @@ export interface AppSettings {
   pin: string;
   currency: string;
   dateFormat: string;
+}
+
+export type PaymentMethod = 'bar' | 'überweisung' | 'karte' | 'sonstige';
+
+export interface Receipt {
+  id: string;
+  profileId: string;
+  invoiceId: string | null;
+  receiptNumber: string;
+  date: string;
+  amount: number;
+  payerName: string;
+  purpose: string;
+  paymentMethod: PaymentMethod;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Attachment {
+  id: string;
+  profileId: string;
+  name: string;
+  mimeType: string;
+  size: number;
+  data: string;
+  createdAt: string;
 }

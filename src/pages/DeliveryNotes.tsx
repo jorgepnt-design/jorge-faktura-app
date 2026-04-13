@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   Plus, Search, Truck, MoreVertical, Edit2, Trash2,
-  Download, Package, Trash, RefreshCw,
+  Download, Package, Trash, RefreshCw, Share2, Mail, MessageCircle,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import Button from '../components/common/Button';
@@ -15,7 +15,7 @@ import {
   formatCurrency, formatDate, getStatusColor, getStatusLabel,
   generateId, todayISO, calculateLineItem, calculateInvoiceTotals,
 } from '../utils/helpers';
-import { generateDeliveryNotePDF } from '../utils/pdf';
+import { generateDeliveryNotePDF, getDeliveryNotePdfBlob } from '../utils/pdf';
 
 const UNITS = ['Stk.', 'Karton', 'Palette', 'kg', 'Liter', 'm', 'm²', 'Pauschal'];
 const VAT_RATES: { value: 0 | 7 | 19; label: string }[] = [
@@ -79,6 +79,11 @@ export default function DeliveryNotes() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState<DNFormData>(emptyForm(loggedInProfileId || ''));
+  const [shareBlobUrl, setShareBlobUrl] = useState<string | null>(null);
+  const [shareFilename, setShareFilename] = useState('');
+  const [shareSubject, setShareSubject] = useState('');
+  const [shareBody, setShareBody] = useState('');
+  const [shareEmail, setShareEmail] = useState('');
 
   const profileCustomers = useMemo(
     () => customers.filter((c) => c.profileId === form.profileId),
@@ -178,6 +183,21 @@ export default function DeliveryNotes() {
     setShowForm(false);
   };
 
+  const handleShare = (note: DeliveryNote) => {
+    const profile = profiles.find((p) => p.id === note.profileId);
+    const customer = customers.find((c) => c.id === note.customerId) || null;
+    if (!profile) return;
+    const blob = getDeliveryNotePdfBlob(note, profile, customer);
+    const url = URL.createObjectURL(blob);
+    setShareBlobUrl(url);
+    setShareFilename(`Lieferschein-${note.deliveryNoteNumber}.pdf`);
+    setShareSubject(`Lieferschein ${note.deliveryNoteNumber}`);
+    setShareBody(`Sehr geehrte Damen und Herren,\n\nanbei finden Sie den Lieferschein ${note.deliveryNoteNumber}.\n\nMit freundlichen Grüßen\n${profile.personName || profile.companyName}`);
+    setShareEmail(customer?.email || '');
+  };
+
+  const closeShare = () => { if (shareBlobUrl) URL.revokeObjectURL(shareBlobUrl); setShareBlobUrl(null); };
+
   const handlePDF = (note: DeliveryNote) => {
     const profile = profiles.find((p) => p.id === note.profileId);
     const customer = customers.find((c) => c.id === note.customerId) || null;
@@ -245,6 +265,7 @@ export default function DeliveryNotes() {
               onEdit={() => openForm(note)}
               onDelete={() => setDeleteId(note.id)}
               onPDF={() => handlePDF(note)}
+              onShare={() => handleShare(note)}
             />
           ))}
         </div>
@@ -499,6 +520,31 @@ export default function DeliveryNotes() {
         title="Lieferschein löschen"
         message="Möchten Sie diesen Lieferschein wirklich löschen?"
       />
+
+      {/* Share modal */}
+      <Modal isOpen={!!shareBlobUrl} onClose={closeShare} title="Lieferschein teilen" size="sm"
+        footer={<Button variant="secondary" fullWidth onClick={closeShare}>Schließen</Button>}>
+        <div className="space-y-3">
+          <button onClick={() => { const a = document.createElement('a'); a.href = shareBlobUrl!; a.download = shareFilename; a.click(); }}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-brand-600 text-white font-medium hover:bg-brand-700 transition-colors">
+            <Download className="w-5 h-5" /> PDF herunterladen
+          </button>
+          <div className="space-y-2">
+            <input type="email" value={shareEmail} onChange={(e) => setShareEmail(e.target.value)}
+              placeholder="Empfänger E-Mail (optional)"
+              className="w-full h-10 px-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            <button onClick={() => window.location.href = `mailto:${shareEmail}?subject=${encodeURIComponent(shareSubject)}&body=${encodeURIComponent(shareBody)}`}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition-colors">
+              <Mail className="w-5 h-5 text-blue-500" /> Per E-Mail senden
+            </button>
+          </div>
+          <button onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(shareSubject + '\n\n' + shareBody)}`, '_blank')}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition-colors">
+            <MessageCircle className="w-5 h-5 text-green-500" /> Per WhatsApp teilen
+          </button>
+          <p className="text-xs text-slate-400 text-center">PDF herunterladen, dann in WhatsApp/E-Mail anhängen</p>
+        </div>
+      </Modal>
     </div>
   );
 }
@@ -510,9 +556,10 @@ interface DNCardProps {
   onEdit: () => void;
   onDelete: () => void;
   onPDF: () => void;
+  onShare: () => void;
 }
 
-function DNCard({ note, customerName, profileName, onEdit, onDelete, onPDF }: DNCardProps) {
+function DNCard({ note, customerName, profileName, onEdit, onDelete, onPDF, onShare }: DNCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -546,7 +593,10 @@ function DNCard({ note, customerName, profileName, onEdit, onDelete, onPDF }: DN
                         <Edit2 className="w-4 h-4" /> Bearbeiten
                       </button>
                       <button onClick={() => { onPDF(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                        <Download className="w-4 h-4" /> PDF
+                        <Download className="w-4 h-4" /> PDF exportieren
+                      </button>
+                      <button onClick={() => { onShare(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                        <Share2 className="w-4 h-4" /> Teilen
                       </button>
                       <div className="my-1 border-t border-slate-100" />
                       <button onClick={() => { onDelete(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50">

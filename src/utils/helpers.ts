@@ -37,6 +37,10 @@ export function generateDeliveryNoteNumber(counter: number): string {
   return `LS-${String(10000 + counter).padStart(5, '0')}`;
 }
 
+export function generateReceiptNumber(counter: number): string {
+  return `QU-${String(10000 + counter).padStart(5, '0')}`;
+}
+
 export function generateCustomerNumber(counter: number): string {
   return `KD-${String(1000 + counter).padStart(4, '0')}`;
 }
