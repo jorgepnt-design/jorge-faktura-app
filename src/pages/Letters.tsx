@@ -48,10 +48,11 @@ export default function Letters() {
 
   const filtered = useMemo(() => {
     return letters.filter((l) => {
+      if (l.profileId !== loggedInProfileId) return false;
       const q = search.toLowerCase();
       return !search || l.title.toLowerCase().includes(q) || l.content.toLowerCase().includes(q);
     });
-  }, [letters, search]);
+  }, [letters, search, loggedInProfileId]);
 
   const openForm = (letter?: Letter) => {
     if (letter) {

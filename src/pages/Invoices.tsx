@@ -95,6 +95,7 @@ export default function Invoices() {
 
   const filtered = useMemo(() => {
     return invoices.filter((i) => {
+      if (i.profileId !== loggedInProfileId) return false;
       const matchProfile = filterProfile ? i.profileId === filterProfile : true;
       const q = search.toLowerCase();
       const customer = customers.find((c) => c.id === i.customerId);
@@ -105,7 +106,7 @@ export default function Invoices() {
         getStatusLabel(i.status).toLowerCase().includes(q);
       return matchProfile && matchSearch;
     });
-  }, [invoices, customers, search, filterProfile]);
+  }, [invoices, customers, search, filterProfile, loggedInProfileId]);
 
   const openForm = (invoice?: Invoice) => {
     if (invoice) {

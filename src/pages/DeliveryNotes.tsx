@@ -92,6 +92,7 @@ export default function DeliveryNotes() {
 
   const filtered = useMemo(() => {
     return deliveryNotes.filter((n) => {
+      if (n.profileId !== loggedInProfileId) return false;
       const matchProfile = filterProfile ? n.profileId === filterProfile : true;
       const q = search.toLowerCase();
       const customer = customers.find((c) => c.id === n.customerId);

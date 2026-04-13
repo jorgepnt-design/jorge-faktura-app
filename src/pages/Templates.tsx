@@ -43,8 +43,13 @@ export default function Templates() {
   const [form, setForm] = useState<TemplateFormData>({ ...emptyForm, profileId: loggedInProfileId });
 
   const filtered = useMemo(() => {
-    return templates.filter((t) => !filterType || t.type === filterType);
-  }, [templates, filterType]);
+    return templates.filter((t) => {
+      // Global templates (profileId === null) are visible to everyone
+      // Profile-specific templates only to their owner
+      if (t.profileId !== null && t.profileId !== loggedInProfileId) return false;
+      return !filterType || t.type === filterType;
+    });
+  }, [templates, filterType, loggedInProfileId]);
 
   const grouped = useMemo(() => {
     const map: Record<string, Template[]> = {};
