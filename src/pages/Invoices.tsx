@@ -66,7 +66,7 @@ function emptyItem(): InvoiceItem {
 export default function Invoices() {
   const [searchParams] = useSearchParams();
   const {
-    profiles, activeProfileId, customers, invoices, articles,
+    profiles, loggedInProfileId, customers, invoices, articles,
     addInvoice, updateInvoice, deleteInvoice, duplicateInvoice,
   } = useStore();
 
@@ -75,7 +75,7 @@ export default function Invoices() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [form, setForm] = useState<InvoiceFormData>(emptyForm(activeProfileId || ''));
+  const [form, setForm] = useState<InvoiceFormData>(emptyForm(loggedInProfileId || ''));
 
   useEffect(() => {
     if (searchParams.get('new') === '1') {
@@ -114,7 +114,7 @@ export default function Invoices() {
       setForm(rest);
     } else {
       setEditingId(null);
-      setForm(emptyForm(activeProfileId || ''));
+      setForm(emptyForm(loggedInProfileId || ''));
     }
     setShowForm(true);
   };

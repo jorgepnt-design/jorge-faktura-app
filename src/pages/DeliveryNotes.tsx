@@ -51,7 +51,7 @@ function emptyItem(): DeliveryNoteItem {
 
 export default function DeliveryNotes() {
   const {
-    profiles, activeProfileId, customers, deliveryNotes, articles,
+    profiles, loggedInProfileId, customers, deliveryNotes, articles,
     addDeliveryNote, updateDeliveryNote, deleteDeliveryNote,
   } = useStore();
 
@@ -60,7 +60,7 @@ export default function DeliveryNotes() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [form, setForm] = useState<DNFormData>(emptyForm(activeProfileId || ''));
+  const [form, setForm] = useState<DNFormData>(emptyForm(loggedInProfileId || ''));
 
   const profileCustomers = useMemo(
     () => customers.filter((c) => c.profileId === form.profileId),
@@ -92,7 +92,7 @@ export default function DeliveryNotes() {
       setForm(rest);
     } else {
       setEditingId(null);
-      setForm(emptyForm(activeProfileId || ''));
+      setForm(emptyForm(loggedInProfileId || ''));
     }
     setShowForm(true);
   };

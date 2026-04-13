@@ -26,7 +26,7 @@ function emptyForm(profileId: string): LetterFormData {
 
 export default function Letters() {
   const {
-    profiles, activeProfileId, customers, letters, templates,
+    profiles, loggedInProfileId, customers, letters, templates,
     addLetter, updateLetter, deleteLetter,
   } = useStore();
 
@@ -34,7 +34,7 @@ export default function Letters() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [form, setForm] = useState<LetterFormData>(emptyForm(activeProfileId || ''));
+  const [form, setForm] = useState<LetterFormData>(emptyForm(loggedInProfileId || ''));
 
   const profileCustomers = useMemo(
     () => customers.filter((c) => c.profileId === form.profileId),
@@ -60,7 +60,7 @@ export default function Letters() {
       setForm(rest);
     } else {
       setEditingId(null);
-      setForm(emptyForm(activeProfileId || ''));
+      setForm(emptyForm(loggedInProfileId || ''));
     }
     setShowForm(true);
   };

@@ -1,6 +1,7 @@
 export interface Profile {
   id: string;
   internalName: string;
+  pin: string;
   companyName: string;
   personName: string;
   address: string;

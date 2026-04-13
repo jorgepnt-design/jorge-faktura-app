@@ -1,8 +1,8 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { X, ChevronRight, Plus, LogOut, RefreshCw } from 'lucide-react';
+import { X, LogOut, FileText } from 'lucide-react';
 import {
-  LayoutDashboard, Users, FileText, Truck, PenLine, LayoutTemplate, Settings
+  LayoutDashboard, Users, Truck, PenLine, LayoutTemplate, Settings
 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 
@@ -22,39 +22,8 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const { profiles, activeProfileId, setActiveProfile, addProfile, logout } = useStore();
-
-  const handleProfileSwitch = (id: string) => {
-    setActiveProfile(id);
-    onClose();
-  };
-
-  const handleAddProfile = () => {
-    addProfile({
-      internalName: 'Neues Profil',
-      companyName: '',
-      personName: '',
-      address: '',
-      zipCode: '',
-      city: '',
-      country: 'Deutschland',
-      email: '',
-      phone: '',
-      mobile: '',
-      website: '',
-      taxNumber: '',
-      vatId: '',
-      bankName: '',
-      iban: '',
-      bic: '',
-      paymentTerms: 'Zahlbar innerhalb von 14 Tagen ohne Abzug.',
-      logo: null,
-      pdfFooter: '',
-    });
-    onClose();
-  };
-
-  const activeProfile = profiles.find((p) => p.id === activeProfileId);
+  const { logout, getLoggedInProfile } = useStore();
+  const profile = getLoggedInProfile();
 
   return (
     <>
@@ -88,70 +57,23 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </button>
         </div>
 
-        {/* Active Profile */}
+        {/* Aktives Profil */}
         <div className="p-4 border-b border-slate-100">
-          <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Aktives Profil</p>
+          <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Angemeldet als</p>
           <div className="flex items-center gap-3 p-2 rounded-xl bg-brand-50">
-            {activeProfile?.logo ? (
-              <img src={activeProfile.logo} alt="" className="w-9 h-9 rounded-lg object-cover" />
+            {profile?.logo ? (
+              <img src={profile.logo} alt="" className="w-9 h-9 rounded-lg object-cover" />
             ) : (
               <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white font-bold text-sm">
-                {(activeProfile?.internalName || 'P').charAt(0).toUpperCase()}
+                {(profile?.internalName || 'P').charAt(0).toUpperCase()}
               </div>
             )}
             <div>
-              <p className="font-semibold text-slate-800 text-sm">
-                {activeProfile?.internalName || 'Kein Profil'}
-              </p>
-              {activeProfile?.companyName && (
-                <p className="text-xs text-slate-500">{activeProfile.companyName}</p>
+              <p className="font-semibold text-slate-800 text-sm">{profile?.internalName || '-'}</p>
+              {profile?.companyName && (
+                <p className="text-xs text-slate-500">{profile.companyName}</p>
               )}
             </div>
-          </div>
-        </div>
-
-        {/* Profile Switcher */}
-        <div className="p-4 border-b border-slate-100">
-          <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Profile wechseln</p>
-          <div className="space-y-1">
-            {profiles.map((profile) => (
-              <button
-                key={profile.id}
-                onClick={() => handleProfileSwitch(profile.id)}
-                className={`w-full flex items-center gap-3 p-2 rounded-xl transition-colors text-left ${
-                  profile.id === activeProfileId
-                    ? 'bg-brand-50 text-brand-700'
-                    : 'hover:bg-slate-50 text-slate-700'
-                }`}
-              >
-                {profile.logo ? (
-                  <img src={profile.logo} alt="" className="w-7 h-7 rounded-md object-cover flex-shrink-0" />
-                ) : (
-                  <div
-                    className={`w-7 h-7 rounded-md flex items-center justify-center text-white font-bold text-xs flex-shrink-0 ${
-                      profile.id === activeProfileId
-                        ? 'bg-brand-600'
-                        : 'bg-slate-400'
-                    }`}
-                  >
-                    {profile.internalName.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <span className="text-sm font-medium truncate">{profile.internalName}</span>
-                {profile.id === activeProfileId && (
-                  <ChevronRight className="w-4 h-4 ml-auto flex-shrink-0 text-brand-500" />
-                )}
-              </button>
-            ))}
-            <button
-              onClick={handleAddProfile}
-              className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 text-slate-500 transition-colors"
-            >
-              <div className="w-7 h-7 rounded-md border-2 border-dashed border-slate-300 flex items-center justify-center">
-                <Plus className="w-3 h-3" />
-              </div>
-              <span className="text-sm">Profil hinzufügen</span>
-            </button>
           </div>
         </div>
 
@@ -180,11 +102,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </div>
         </nav>
 
-        {/* Footer */}
+        {/* Abmelden */}
         <div className="p-4 border-t border-slate-100">
           <button
             onClick={() => { logout(); onClose(); }}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:bg-slate-50 transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-600 transition-colors"
           >
             <LogOut className="w-5 h-5" />
             Abmelden

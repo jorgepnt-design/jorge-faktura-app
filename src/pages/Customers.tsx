@@ -38,28 +38,29 @@ const emptyForm: CustomerFormData = {
 };
 
 export default function Customers() {
-  const { profiles, activeProfileId, customers, addCustomer, updateCustomer, deleteCustomer } = useStore();
+  const { profiles, loggedInProfileId, customers, addCustomer, updateCustomer, deleteCustomer } = useStore();
   const [search, setSearch] = useState('');
   const [filterProfile, setFilterProfile] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [form, setForm] = useState<CustomerFormData>({ ...emptyForm, profileId: activeProfileId || '' });
+  const [form, setForm] = useState<CustomerFormData>({ ...emptyForm, profileId: loggedInProfileId || '' });
   const [errors, setErrors] = useState<Partial<CustomerFormData>>({});
 
   const filtered = useMemo(() => {
     return customers.filter((c) => {
-      const matchProfile = filterProfile ? c.profileId === filterProfile : true;
+      // Nur Kunden des eingeloggten Profils
+      if (c.profileId !== loggedInProfileId) return false;
       const q = search.toLowerCase();
-      const matchSearch =
+      return (
         !search ||
         c.companyName.toLowerCase().includes(q) ||
         c.contactPerson.toLowerCase().includes(q) ||
         c.email.toLowerCase().includes(q) ||
-        c.city.toLowerCase().includes(q);
-      return matchProfile && matchSearch;
+        c.city.toLowerCase().includes(q)
+      );
     });
-  }, [customers, search, filterProfile]);
+  }, [customers, search, loggedInProfileId]);
 
   const handleOpen = (customer?: Customer) => {
     if (customer) {
@@ -79,7 +80,7 @@ export default function Customers() {
       });
     } else {
       setEditingId(null);
-      setForm({ ...emptyForm, profileId: activeProfileId || '' });
+      setForm({ ...emptyForm, profileId: loggedInProfileId || '' });
     }
     setErrors({});
     setShowForm(true);

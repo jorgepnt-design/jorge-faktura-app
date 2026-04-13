@@ -8,7 +8,6 @@ import {
   Invoice,
   DeliveryNote,
   Letter,
-  AppSettings,
 } from '../types';
 import {
   generateId,
@@ -21,13 +20,11 @@ import {
 } from '../utils/helpers';
 
 interface AppState {
-  // Auth
-  isAuthenticated: boolean;
-  settings: AppSettings;
+  // Auth – welches Profil ist gerade eingeloggt
+  loggedInProfileId: string | null;
 
-  // Profiles
+  // Profiles (werden immer gespeichert, aber nur eigene Daten sichtbar)
   profiles: Profile[];
-  activeProfileId: string | null;
 
   // Data
   customers: Customer[];
@@ -38,17 +35,17 @@ interface AppState {
   letters: Letter[];
 
   // Auth actions
-  login: (pin: string) => boolean;
+  loginWithProfile: (profileId: string, pin: string) => boolean;
   logout: () => void;
-  updatePin: (pin: string) => void;
+
+  // Computed helper
+  getLoggedInProfile: () => Profile | null;
 
   // Profile actions
   addProfile: (data: Omit<Profile, 'id' | 'createdAt' | 'invoiceCounter' | 'deliveryNoteCounter'>) => Profile;
   updateProfile: (id: string, data: Partial<Profile>) => void;
   deleteProfile: (id: string) => void;
   duplicateProfile: (id: string) => void;
-  setActiveProfile: (id: string) => void;
-  getActiveProfile: () => Profile | null;
 
   // Customer actions
   addCustomer: (data: Omit<Customer, 'id' | 'createdAt' | 'customerNumber'>) => Customer;
@@ -86,13 +83,12 @@ interface AppState {
   importData: (json: string) => boolean;
 }
 
-const DEFAULT_PIN = '1234';
-
 function createDefaultProfile(): Profile {
   return {
     id: generateId(),
-    internalName: 'Mein Profil',
-    companyName: 'Mein Unternehmen',
+    internalName: 'Admin',
+    pin: '1234',
+    companyName: '',
     personName: '',
     address: '',
     zipCode: '',
@@ -119,10 +115,8 @@ function createDefaultProfile(): Profile {
 export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
-      isAuthenticated: false,
-      settings: { pin: DEFAULT_PIN, currency: 'EUR', dateFormat: 'de-DE' },
+      loggedInProfileId: null,
       profiles: [],
-      activeProfileId: null,
       customers: [],
       articles: [],
       templates: [],
@@ -130,18 +124,21 @@ export const useStore = create<AppState>()(
       deliveryNotes: [],
       letters: [],
 
-      login: (pin) => {
-        if (pin === get().settings.pin) {
-          set({ isAuthenticated: true });
+      loginWithProfile: (profileId, pin) => {
+        const profile = get().profiles.find((p) => p.id === profileId);
+        if (profile && profile.pin === pin) {
+          set({ loggedInProfileId: profileId });
           return true;
         }
         return false;
       },
 
-      logout: () => set({ isAuthenticated: false }),
+      logout: () => set({ loggedInProfileId: null }),
 
-      updatePin: (pin) =>
-        set((s) => ({ settings: { ...s.settings, pin } })),
+      getLoggedInProfile: () => {
+        const { profiles, loggedInProfileId } = get();
+        return profiles.find((p) => p.id === loggedInProfileId) ?? null;
+      },
 
       addProfile: (data) => {
         const profile: Profile = {
@@ -151,10 +148,7 @@ export const useStore = create<AppState>()(
           deliveryNoteCounter: 0,
           createdAt: new Date().toISOString(),
         };
-        set((s) => ({
-          profiles: [...s.profiles, profile],
-          activeProfileId: s.activeProfileId ?? profile.id,
-        }));
+        set((s) => ({ profiles: [...s.profiles, profile] }));
         return profile;
       },
 
@@ -164,16 +158,10 @@ export const useStore = create<AppState>()(
         })),
 
       deleteProfile: (id) =>
-        set((s) => {
-          const remaining = s.profiles.filter((p) => p.id !== id);
-          return {
-            profiles: remaining,
-            activeProfileId:
-              s.activeProfileId === id
-                ? remaining[0]?.id ?? null
-                : s.activeProfileId,
-          };
-        }),
+        set((s) => ({
+          profiles: s.profiles.filter((p) => p.id !== id),
+          loggedInProfileId: s.loggedInProfileId === id ? null : s.loggedInProfileId,
+        })),
 
       duplicateProfile: (id) => {
         const src = get().profiles.find((p) => p.id === id);
@@ -182,6 +170,7 @@ export const useStore = create<AppState>()(
           ...src,
           id: generateId(),
           internalName: `${src.internalName} (Kopie)`,
+          pin: '1234',
           invoiceCounter: 0,
           deliveryNoteCounter: 0,
           createdAt: new Date().toISOString(),
@@ -189,15 +178,7 @@ export const useStore = create<AppState>()(
         set((s) => ({ profiles: [...s.profiles, copy] }));
       },
 
-      setActiveProfile: (id) => set({ activeProfileId: id }),
-
-      getActiveProfile: () => {
-        const { profiles, activeProfileId } = get();
-        return profiles.find((p) => p.id === activeProfileId) ?? null;
-      },
-
       addCustomer: (data) => {
-        const profile = get().profiles.find((p) => p.id === data.profileId);
         const count = get().customers.filter((c) => c.profileId === data.profileId).length;
         const customer: Customer = {
           ...data,
@@ -218,37 +199,25 @@ export const useStore = create<AppState>()(
         set((s) => ({ customers: s.customers.filter((c) => c.id !== id) })),
 
       addArticle: (data) => {
-        const article: Article = {
-          ...data,
-          id: generateId(),
-          createdAt: new Date().toISOString(),
-        };
+        const article: Article = { ...data, id: generateId(), createdAt: new Date().toISOString() };
         set((s) => ({ articles: [...s.articles, article] }));
         return article;
       },
 
       updateArticle: (id, data) =>
-        set((s) => ({
-          articles: s.articles.map((a) => (a.id === id ? { ...a, ...data } : a)),
-        })),
+        set((s) => ({ articles: s.articles.map((a) => (a.id === id ? { ...a, ...data } : a)) })),
 
       deleteArticle: (id) =>
         set((s) => ({ articles: s.articles.filter((a) => a.id !== id) })),
 
       addTemplate: (data) => {
-        const template: Template = {
-          ...data,
-          id: generateId(),
-          createdAt: new Date().toISOString(),
-        };
+        const template: Template = { ...data, id: generateId(), createdAt: new Date().toISOString() };
         set((s) => ({ templates: [...s.templates, template] }));
         return template;
       },
 
       updateTemplate: (id, data) =>
-        set((s) => ({
-          templates: s.templates.map((t) => (t.id === id ? { ...t, ...data } : t)),
-        })),
+        set((s) => ({ templates: s.templates.map((t) => (t.id === id ? { ...t, ...data } : t)) })),
 
       deleteTemplate: (id) =>
         set((s) => ({ templates: s.templates.filter((t) => t.id !== id) })),
@@ -358,8 +327,11 @@ export const useStore = create<AppState>()(
         set((s) => ({ letters: s.letters.filter((l) => l.id !== id) })),
 
       exportData: () => {
-        const { profiles, customers, articles, templates, invoices, deliveryNotes, letters, settings } = get();
-        return JSON.stringify({ profiles, customers, articles, templates, invoices, deliveryNotes, letters, settings, exportedAt: new Date().toISOString() }, null, 2);
+        const { profiles, customers, articles, templates, invoices, deliveryNotes, letters } = get();
+        return JSON.stringify(
+          { profiles, customers, articles, templates, invoices, deliveryNotes, letters, exportedAt: new Date().toISOString() },
+          null, 2
+        );
       },
 
       importData: (json) => {
@@ -373,7 +345,7 @@ export const useStore = create<AppState>()(
             invoices: data.invoices || [],
             deliveryNotes: data.deliveryNotes || [],
             letters: data.letters || [],
-            activeProfileId: data.profiles?.[0]?.id ?? null,
+            loggedInProfileId: null,
           });
           return true;
         } catch {
@@ -383,13 +355,20 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'jorge-faktura-store',
-      version: 1,
+      version: 2,
       onRehydrateStorage: () => (state) => {
-        // Initialize with a default profile if none exist
+        // Ensure at least one default profile exists
         if (state && state.profiles.length === 0) {
-          const defaultProfile = createDefaultProfile();
-          state.profiles = [defaultProfile];
-          state.activeProfileId = defaultProfile.id;
+          const p = createDefaultProfile();
+          state.profiles = [p];
+        }
+        // Migrate old profiles without pin
+        if (state) {
+          state.profiles = state.profiles.map((p) =>
+            p.pin ? p : { ...p, pin: '1234' }
+          );
+          // Always start logged out after page reload
+          state.loggedInProfileId = null;
         }
       },
     }

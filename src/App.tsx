@@ -12,13 +12,14 @@ import Templates from './pages/Templates';
 import Settings from './pages/Settings';
 
 function AppRoutes() {
-  const { isAuthenticated, profiles, addProfile, activeProfileId } = useStore();
+  const { loggedInProfileId, profiles, addProfile } = useStore();
 
-  // Ensure at least one profile exists after hydration
+  // Ensure at least one profile exists
   useEffect(() => {
-    if (isAuthenticated && profiles.length === 0) {
+    if (profiles.length === 0) {
       addProfile({
-        internalName: 'Mein Profil',
+        internalName: 'Admin',
+        pin: '1234',
         companyName: '',
         personName: '',
         address: '',
@@ -39,9 +40,9 @@ function AppRoutes() {
         pdfFooter: '',
       });
     }
-  }, [isAuthenticated, profiles.length]);
+  }, [profiles.length]);
 
-  if (!isAuthenticated) {
+  if (!loggedInProfileId) {
     return <Auth />;
   }
 

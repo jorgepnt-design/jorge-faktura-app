@@ -8,8 +8,8 @@ interface HeaderProps {
 }
 
 export default function Header({ title, onMenuOpen }: HeaderProps) {
-  const { getActiveProfile } = useStore();
-  const profile = getActiveProfile();
+  const { getLoggedInProfile } = useStore();
+  const profile = getLoggedInProfile();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-slate-200 h-14 flex items-center justify-between px-4 safe-top">
@@ -34,7 +34,7 @@ export default function Header({ title, onMenuOpen }: HeaderProps) {
           />
         ) : (
           <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white font-bold text-sm">
-            {(profile?.internalName || profile?.companyName || 'P').charAt(0).toUpperCase()}
+            {(profile?.internalName || 'P').charAt(0).toUpperCase()}
           </div>
         )}
       </div>

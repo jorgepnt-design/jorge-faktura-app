@@ -35,12 +35,12 @@ const emptyForm: TemplateFormData = {
 };
 
 export default function Templates() {
-  const { profiles, activeProfileId, templates, addTemplate, updateTemplate, deleteTemplate } = useStore();
+  const { profiles, loggedInProfileId, templates, addTemplate, updateTemplate, deleteTemplate } = useStore();
   const [filterType, setFilterType] = useState<TemplateType | ''>('');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [form, setForm] = useState<TemplateFormData>({ ...emptyForm, profileId: activeProfileId });
+  const [form, setForm] = useState<TemplateFormData>({ ...emptyForm, profileId: loggedInProfileId });
 
   const filtered = useMemo(() => {
     return templates.filter((t) => !filterType || t.type === filterType);
@@ -68,7 +68,7 @@ export default function Templates() {
       });
     } else {
       setEditingId(null);
-      setForm({ ...emptyForm, profileId: activeProfileId });
+      setForm({ ...emptyForm, profileId: loggedInProfileId });
     }
     setShowForm(true);
   };
