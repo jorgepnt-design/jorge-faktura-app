@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, ChevronLeft, UserPlus, Eye, EyeOff } from 'lucide-react';
+import { ChevronLeft, UserPlus, Eye, EyeOff } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { Profile } from '../types';
 
@@ -85,11 +85,7 @@ export default function Auth() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur mx-auto mb-4 flex items-center justify-center">
-            <FileText className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold text-white mb-1">Jorge Faktura</h1>
-          <p className="text-brand-200 text-sm">Professionelles Rechnungsprogramm</p>
+          <img src="/logo.svg" alt="Jorge Faktura" className="w-24 h-24 mx-auto mb-4 drop-shadow-xl" />
         </div>
 
         <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">

@@ -45,9 +45,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-100">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
-              <FileText className="w-4 h-4 text-white" />
-            </div>
+            <img src="/logo.svg" alt="Jorge Faktura" className="w-9 h-9 rounded-xl" />
             <span className="font-bold text-slate-900 text-base">Jorge Faktura</span>
           </div>
           <button
