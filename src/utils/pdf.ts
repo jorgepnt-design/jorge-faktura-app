@@ -305,12 +305,8 @@ function drawSignature(doc: jsPDF, profile: Profile, y: number): number {
     draw(doc, SLATE_300);
     doc.setLineWidth(0.3);
     doc.line(ML, y + 22, ML + 60, y + 22);
-    txt(doc, SLATE_500);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.text(profile.personName || profile.companyName || '', ML, y + 26);
   } catch { /* skip if image invalid */ }
-  return y + 26;
+  return y + 22;
 }
 
 // ── Modern footer: navy bar ───────────────────────────────────────────────────
@@ -447,7 +443,7 @@ function buildInvoiceDoc(
 
   // Signature
   if (profile.signatureOnInvoice && profile.signature) {
-    drawSignature(doc, profile, y - 6);
+    drawSignature(doc, profile, y - 9);
   }
 
   drawModernFooter(doc, profile);
@@ -589,7 +585,7 @@ function buildDeliveryNoteDoc(
   doc.text('Unterschrift / Datum', ML, y + 21);
 
   if (profile.signatureOnDeliveryNote && profile.signature) {
-    drawSignature(doc, profile, y + 16);
+    drawSignature(doc, profile, y + 13);
   }
 
   drawModernFooter(doc, profile);
@@ -629,7 +625,7 @@ function buildLetterDoc(
   y += bodyLines.length * 5 + 8;
 
   if (profile.signatureOnLetter && profile.signature) {
-    drawSignature(doc, profile, y - 10);
+    drawSignature(doc, profile, y - 13);
   }
 
   drawModernFooter(doc, profile);
@@ -701,7 +697,7 @@ function buildReceiptDoc(receipt: Receipt, profile: Profile): jsPDF {
 
   // Signature
   if (profile.signature) {
-    drawSignature(doc, profile, y - 10);
+    drawSignature(doc, profile, y - 13);
   }
 
   drawModernFooter(doc, profile);
