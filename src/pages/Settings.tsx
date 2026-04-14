@@ -171,7 +171,19 @@ function ProfileEditCard({ profileId }: { profileId: string }) {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => setForm((f) => f ? { ...f, logo: ev.target?.result as string } : f);
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        setForm((f) => f ? {
+          ...f,
+          logo: dataUrl,
+          logoNaturalWidth: img.naturalWidth,
+          logoNaturalHeight: img.naturalHeight,
+        } : f);
+      };
+      img.src = dataUrl;
+    };
     reader.readAsDataURL(file);
   };
 

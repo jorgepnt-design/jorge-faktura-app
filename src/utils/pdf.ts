@@ -159,15 +159,12 @@ function drawModernHeader(
       const imgType = profile.logo.startsWith('data:image/png') ? 'PNG' : 'JPEG';
       const MAX_W = 44, MAX_H = 22;
 
-      // Resolve natural pixel dimensions — byte parser first, HTMLImageElement fallback
-      let nw = 0, nh = 0;
-      const dims = getImageDimensions(profile.logo);
-      if (dims && dims.w > 0 && dims.h > 0) { nw = dims.w; nh = dims.h; }
+      // Resolve natural pixel dimensions — stored values first, then byte parser
+      let nw = profile.logoNaturalWidth || 0;
+      let nh = profile.logoNaturalHeight || 0;
       if (!nw || !nh) {
-        const imgEl = new Image();
-        imgEl.src = profile.logo;
-        nw = imgEl.naturalWidth;
-        nh = imgEl.naturalHeight;
+        const dims = getImageDimensions(profile.logo);
+        if (dims && dims.w > 0 && dims.h > 0) { nw = dims.w; nh = dims.h; }
       }
 
       let logoW = MAX_H, logoH = MAX_H; // safe square fallback
