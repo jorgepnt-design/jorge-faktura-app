@@ -178,7 +178,7 @@ function drawModernHeader(
           logoW = MAX_H * ratio;
         }
       }
-      const logoY = 17 + (MAX_H - logoH) / 2; // vertically center in header
+      const logoY = 12 + (MAX_H - logoH) / 2; // vertically center in header
       doc.addImage(profile.logo, imgType, ML, logoY, logoW, logoH);
       nameX = ML + logoW + 4;
     } catch { /* skip invalid logo */ }
