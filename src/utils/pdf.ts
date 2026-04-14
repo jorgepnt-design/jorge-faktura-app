@@ -447,7 +447,7 @@ function buildInvoiceDoc(
 
   // Signature
   if (profile.signatureOnInvoice && profile.signature) {
-    drawSignature(doc, profile, y + 4);
+    drawSignature(doc, profile, y - 6);
   }
 
   drawModernFooter(doc, profile);
@@ -589,7 +589,7 @@ function buildDeliveryNoteDoc(
   doc.text('Unterschrift / Datum', ML, y + 21);
 
   if (profile.signatureOnDeliveryNote && profile.signature) {
-    drawSignature(doc, profile, y + 26);
+    drawSignature(doc, profile, y + 16);
   }
 
   drawModernFooter(doc, profile);
@@ -629,7 +629,7 @@ function buildLetterDoc(
   y += bodyLines.length * 5 + 8;
 
   if (profile.signatureOnLetter && profile.signature) {
-    drawSignature(doc, profile, y);
+    drawSignature(doc, profile, y - 10);
   }
 
   drawModernFooter(doc, profile);
@@ -701,7 +701,7 @@ function buildReceiptDoc(receipt: Receipt, profile: Profile): jsPDF {
 
   // Signature
   if (profile.signature) {
-    drawSignature(doc, profile, y);
+    drawSignature(doc, profile, y - 10);
   }
 
   drawModernFooter(doc, profile);
