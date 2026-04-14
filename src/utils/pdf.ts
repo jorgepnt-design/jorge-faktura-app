@@ -596,7 +596,12 @@ function buildLetterDoc(
   y = drawDocTitle(doc, letter.title, y + 24, 17);
 
   if (customer) {
-    const fromLines = profileAddressLines(profile);
+    const fromLines = [
+      profile.companyName || profile.internalName,
+      profile.personName || '',
+      profile.address || '',
+      [profile.zipCode, profile.city].filter(Boolean).join(' '),
+    ].filter(Boolean);
     const toLines = customerAddressLines(customer);
     y = drawFromTo(doc, 'VON', fromLines, 'AN', toLines, y + 2);
   } else {
