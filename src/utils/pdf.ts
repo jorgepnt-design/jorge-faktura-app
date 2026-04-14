@@ -734,31 +734,39 @@ function buildLetterDoc(
 }
 
 // ── Receipt builder ───────────────────────────────────────────────────────────
-const PAYMENT_METHOD_LABEL: Record<string, string> = {
-  bar: 'Bar',
-  überweisung: 'Überweisung',
-  karte: 'Karte',
-  sonstige: 'Sonstige',
+const PAYMENT_METHOD_LABEL: Record<Lang, Record<string, string>> = {
+  de: { bar: 'Bar', überweisung: 'Überweisung', karte: 'Karte', sonstige: 'Sonstige' },
+  en: { bar: 'Cash', überweisung: 'Bank Transfer', karte: 'Card', sonstige: 'Other' },
+};
+
+const RECEIPT_T: Record<Lang, {
+  title: string; nr: string; receivedFrom: string; purpose: string;
+  paymentMethod: string; notes: string; amount: string;
+}> = {
+  de: { title: 'Quittung', nr: 'Quittungs-Nr.', receivedFrom: 'Empfangen von', purpose: 'Verwendungszweck', paymentMethod: 'Zahlungsart', notes: 'Bemerkung', amount: 'BETRAG' },
+  en: { title: 'Receipt',  nr: 'Receipt No.',   receivedFrom: 'Received from',  purpose: 'Purpose',           paymentMethod: 'Payment Method', notes: 'Notes',    amount: 'AMOUNT' },
 };
 
 function buildReceiptDoc(receipt: Receipt, profile: Profile): jsPDF {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const lang: Lang = receipt.language || 'de';
+  const RT = RECEIPT_T[lang];
 
   let y = drawModernHeader(
     doc, profile,
-    'Quittungs-Nr.', receipt.receiptNumber,
+    RT.nr, receipt.receiptNumber,
     formatDate(receipt.date),
   );
 
-  y = drawDocTitle(doc, 'Quittung', y + 14);
+  y = drawDocTitle(doc, RT.title, y + 14);
   y += 4;
 
   const rows: [string, string][] = [
-    ['Empfangen von', receipt.payerName || '–'],
-    ['Verwendungszweck', receipt.purpose || '–'],
-    ['Zahlungsart', PAYMENT_METHOD_LABEL[receipt.paymentMethod] || receipt.paymentMethod],
+    [RT.receivedFrom, receipt.payerName || '–'],
+    [RT.purpose, receipt.purpose || '–'],
+    [RT.paymentMethod, PAYMENT_METHOD_LABEL[lang][receipt.paymentMethod] || receipt.paymentMethod],
   ];
-  if (receipt.notes) rows.push(['Bemerkung', receipt.notes]);
+  if (receipt.notes) rows.push([RT.notes, receipt.notes]);
 
   rows.forEach(([label, value]) => {
     // Row with gold label
@@ -789,7 +797,7 @@ function buildReceiptDoc(receipt: Receipt, profile: Profile): jsPDF {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
   txt(doc, NAVY);
-  doc.text('BETRAG', ML + 6, y + 10);
+  doc.text(RT.amount, ML + 6, y + 10);
 
   doc.setFontSize(16);
   txt(doc, NAVY);

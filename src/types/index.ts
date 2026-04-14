@@ -179,6 +179,7 @@ export interface Receipt {
   profileId: string;
   invoiceId: string | null;
   receiptNumber: string;
+  language: 'de' | 'en';
   date: string;
   amount: number;
   payerName: string;

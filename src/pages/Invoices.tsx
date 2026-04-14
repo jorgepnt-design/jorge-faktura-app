@@ -105,6 +105,7 @@ export default function Invoices() {
   const [receiptForm, setReceiptForm] = useState<Omit<Receipt, 'id' | 'createdAt' | 'updatedAt' | 'receiptNumber'>>({
     profileId: loggedInProfileId || '',
     invoiceId: null,
+    language: 'de',
     date: todayISO(),
     amount: 0,
     payerName: '',
@@ -759,6 +760,12 @@ export default function Invoices() {
           <FormField label="Zahlungsart">
             <Select value={receiptForm.paymentMethod} onChange={(e) => setReceiptForm({ ...receiptForm, paymentMethod: e.target.value as PaymentMethod })}>
               {PAYMENT_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+            </Select>
+          </FormField>
+          <FormField label="Sprache / Language">
+            <Select value={receiptForm.language} onChange={(e) => setReceiptForm({ ...receiptForm, language: e.target.value as 'de' | 'en' })}>
+              <option value="de">Deutsch</option>
+              <option value="en">English</option>
             </Select>
           </FormField>
           <FormField label="Bemerkung">
