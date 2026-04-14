@@ -580,6 +580,8 @@ function buildDeliveryNoteDoc(
     y -= 4;
   }
 
+  y += 5;
+
   const hasPrices = note.items.some((item) => (item.netUnitPrice ?? 0) > 0);
 
   if (hasPrices) {
