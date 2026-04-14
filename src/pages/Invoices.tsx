@@ -239,6 +239,7 @@ export default function Invoices() {
     setReceiptForm({
       profileId: invoice.profileId,
       invoiceId: invoice.id,
+      language: 'de',
       date: todayISO(),
       amount: invoice.grossTotal,
       payerName: customer?.companyName || '',
@@ -384,7 +385,7 @@ export default function Invoices() {
           <div className="flex justify-end">
             <Button icon={<Plus className="w-4 h-4" />} onClick={() => {
               setReceiptEditId(null);
-              setReceiptForm({ profileId: loggedInProfileId || '', invoiceId: null, date: todayISO(), amount: 0, payerName: '', purpose: '', paymentMethod: 'bar', notes: '' });
+              setReceiptForm({ profileId: loggedInProfileId || '', invoiceId: null, language: 'de', date: todayISO(), amount: 0, payerName: '', purpose: '', paymentMethod: 'bar', notes: '' });
               setShowReceiptForm(true);
             }}>
               Neue Quittung
