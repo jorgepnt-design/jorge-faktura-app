@@ -621,8 +621,8 @@ function buildLetterDoc(
   doc.setFontSize(10);
   txt(doc, SLATE_700);
   const bodyLines = doc.splitTextToSize(letter.content, BODY_W);
-  doc.text(bodyLines, ML, y);
-  y += bodyLines.length * 5 + 8;
+  doc.text(bodyLines, ML, y + 20);
+  y += bodyLines.length * 5 + 28;
 
   if (profile.signatureOnLetter && profile.signature) {
     drawSignature(doc, profile, y - 13);
