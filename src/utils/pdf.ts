@@ -526,7 +526,7 @@ function buildInvoiceDoc(
 
   // Signature
   if (profile.signatureOnInvoice && profile.signature) {
-    drawSignature(doc, profile, y - 9);
+    drawSignature(doc, profile, y - 4);
   }
 
   return finalizeDoc(doc, profile);
