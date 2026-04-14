@@ -20,6 +20,7 @@ const T: Record<Lang, {
   vatLabel: (rate: number) => string;
   from: string;
   to: string;
+  paymentNote: string;
 }> = {
   de: {
     invoice:       'Rechnung',
@@ -35,6 +36,7 @@ const T: Record<Lang, {
     vatLabel:      (rate) => `MwSt. ${rate}%:`,
     from:          'VON',
     to:            'AN',
+    paymentNote:   'Zahlungshinweis',
   },
   en: {
     invoice:       'Invoice',
@@ -50,6 +52,7 @@ const T: Record<Lang, {
     vatLabel:      (rate) => `VAT ${rate}%:`,
     from:          'FROM',
     to:            'TO',
+    paymentNote:   'Payment Note',
   },
 };
 
@@ -430,7 +433,7 @@ function buildInvoiceDoc(
 
   // Payment text
   if (invoice.paymentText) {
-    y = drawTextBlock(doc, 'Zahlungshinweis', invoice.paymentText, y);
+    y = drawTextBlock(doc, T[lang].paymentNote, invoice.paymentText, y);
   }
 
   // Signature
