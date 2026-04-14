@@ -80,6 +80,38 @@ const fill = (doc: jsPDF, c: RGB) => doc.setFillColor(c[0], c[1], c[2]);
 const draw = (doc: jsPDF, c: RGB) => doc.setDrawColor(c[0], c[1], c[2]);
 const txt  = (doc: jsPDF, c: RGB) => doc.setTextColor(c[0], c[1], c[2]);
 
+// ── Image dimension helper (reads pixels from base64 without loading into DOM) ─
+function getImageDimensions(dataUrl: string): { w: number; h: number } | null {
+  try {
+    const base64 = dataUrl.split(',')[1];
+    const bin = atob(base64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+
+    if (dataUrl.includes('image/png')) {
+      // PNG: width at bytes 16–19, height at bytes 20–23
+      const w = (bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19];
+      const h = (bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23];
+      return { w, h };
+    } else {
+      // JPEG: scan for SOF markers (C0–C3, C5–C7, C9–CB)
+      const SOF = new Set([0xC0,0xC1,0xC2,0xC3,0xC5,0xC6,0xC7,0xC9,0xCA,0xCB]);
+      let i = 2;
+      while (i < bytes.length - 8) {
+        if (bytes[i] !== 0xFF) { i++; continue; }
+        const marker = bytes[i + 1];
+        if (SOF.has(marker)) {
+          return { w: (bytes[i+7] << 8) | bytes[i+8], h: (bytes[i+5] << 8) | bytes[i+6] };
+        }
+        if (marker === 0xD9 || marker === 0xDA) break;
+        const segLen = (bytes[i + 2] << 8) | bytes[i + 3];
+        i += 2 + segLen;
+      }
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
 // ── Address helpers ───────────────────────────────────────────────────────────
 function profileAddressLines(profile: Profile): string[] {
   return [
@@ -120,13 +152,27 @@ function drawModernHeader(
   draw(doc, NAVY);
   doc.rect(0, 3, PAGE_W, 38, 'F');
 
-  // Logo (top-left inside navy bar)
+  // Logo (top-left inside navy bar) — preserve aspect ratio
   let nameX = ML;
   if (profile.logo && profile.logoOnPdf !== false) {
     try {
       const imgType = profile.logo.startsWith('data:image/png') ? 'PNG' : 'JPEG';
-      doc.addImage(profile.logo, imgType, ML, 7, 28, 12);
-      nameX = ML + 32;
+      const MAX_W = 44, MAX_H = 22;
+      const dims = getImageDimensions(profile.logo);
+      let logoW = MAX_W, logoH = MAX_H;
+      if (dims && dims.w > 0 && dims.h > 0) {
+        const ratio = dims.w / dims.h;
+        if (ratio > MAX_W / MAX_H) {
+          logoW = MAX_W;
+          logoH = MAX_W / ratio;
+        } else {
+          logoH = MAX_H;
+          logoW = MAX_H * ratio;
+        }
+      }
+      const logoY = 7 + (MAX_H - logoH) / 2; // vertically center in header
+      doc.addImage(profile.logo, imgType, ML, logoY, logoW, logoH);
+      nameX = ML + logoW + 4;
     } catch { /* skip invalid logo */ }
   }
 
