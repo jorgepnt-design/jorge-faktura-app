@@ -69,16 +69,26 @@ const SLATE_100: RGB  = [241, 245, 249];
 const WHITE: RGB      = [255, 255, 255];
 
 // ── Layout constants ─────────────────────────────────────────────────────────
-const PAGE_W   = 210;
-const PAGE_H   = 297;
-const ML       = 14;   // margin left
-const MR       = 14;   // margin right
-const BODY_W   = PAGE_W - ML - MR; // 182 mm
+const PAGE_W      = 210;
+const PAGE_H      = 297;
+const ML          = 14;   // margin left
+const MR          = 14;   // margin right
+const BODY_W      = PAGE_W - ML - MR; // 182 mm
+const SAFE_BOTTOM = PAGE_H - 18 - 10; // 10 mm above footer = 269 mm
 
 // ── Low-level helpers ────────────────────────────────────────────────────────
 const fill = (doc: jsPDF, c: RGB) => doc.setFillColor(c[0], c[1], c[2]);
 const draw = (doc: jsPDF, c: RGB) => doc.setDrawColor(c[0], c[1], c[2]);
 const txt  = (doc: jsPDF, c: RGB) => doc.setTextColor(c[0], c[1], c[2]);
+
+// ── Page break helper ────────────────────────────────────────────────────────
+function ensureSpace(doc: jsPDF, y: number, needed: number): number {
+  if (y + needed > SAFE_BOTTOM) {
+    doc.addPage();
+    return 20;
+  }
+  return y;
+}
 
 // ── Image dimension helper (reads pixels from base64 without loading into DOM) ─
 function getImageDimensions(dataUrl: string): { w: number; h: number } | null {
@@ -294,6 +304,7 @@ function drawModernTotals(
   startY: number,
   lang: Lang = 'de',
 ): number {
+  startY = ensureSpace(doc, startY, 50);
   const boxX = ML + BODY_W * 0.45;
   const boxW = PAGE_W - MR - boxX;
   const rowH = 7;
@@ -337,25 +348,45 @@ function drawModernTotals(
   return startY + boxH + 10;
 }
 
+// ── Draw footer on every page ─────────────────────────────────────────────────
+function finalizeDoc(doc: jsPDF, profile: Profile): jsPDF {
+  const n = doc.getNumberOfPages();
+  for (let p = 1; p <= n; p++) {
+    doc.setPage(p);
+    drawModernFooter(doc, profile);
+  }
+  return doc;
+}
+
 // ── Text block (notes / payment) ──────────────────────────────────────────────
 function drawTextBlock(doc: jsPDF, label: string, content: string, y: number): number {
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
-  txt(doc, GOLD);
-  doc.text(label.toUpperCase(), ML, y);
-  y += 4;
+  y = ensureSpace(doc, y, 20);
+
+  if (label) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    txt(doc, GOLD);
+    doc.text(label.toUpperCase(), ML, y);
+    y += 4;
+  }
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9.5);
   txt(doc, SLATE_700);
   const lines = doc.splitTextToSize(content, BODY_W);
-  doc.text(lines, ML, y);
-  return y + lines.length * 5 + 6;
+  const lineH = 5;
+  for (const line of lines) {
+    y = ensureSpace(doc, y, lineH + 2);
+    doc.text(line, ML, y);
+    y += lineH;
+  }
+  return y + 6;
 }
 
 // ── Signature ─────────────────────────────────────────────────────────────────
 function drawSignature(doc: jsPDF, profile: Profile, y: number): number {
   if (!profile.signature) return y;
+  y = ensureSpace(doc, y, 35);
   try {
     const imgType = profile.signature.startsWith('data:image/png') ? 'PNG' : 'JPEG';
     doc.addImage(profile.signature, imgType, ML, y, 60, 20);
@@ -439,7 +470,7 @@ function buildInvoiceDoc(
 
   // Intro text
   if (invoice.introText) {
-    y = drawTextBlock(doc, '', invoice.introText, y) - 5;
+    y = drawTextBlock(doc, '', invoice.introText, y);
   }
 
   // Items table
@@ -475,7 +506,7 @@ function buildInvoiceDoc(
       3: { cellWidth: 18, halign: 'center' },
       4: { cellWidth: 30, halign: 'right' },
     },
-    margin: { left: ML, right: MR },
+    margin: { left: ML, right: MR, bottom: 28 },
     tableLineColor: SLATE_300,
     tableLineWidth: 0.2,
   });
@@ -495,8 +526,7 @@ function buildInvoiceDoc(
     drawSignature(doc, profile, y - 9);
   }
 
-  drawModernFooter(doc, profile);
-  return doc;
+  return finalizeDoc(doc, profile);
 }
 
 // ── Delivery note builder ─────────────────────────────────────────────────────
@@ -536,14 +566,18 @@ function buildDeliveryNoteDoc(
   }
 
   if (note.introText) {
+    y += 10;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9.5);
     txt(doc, SLATE_700);
-    doc.setLineHeightFactor(1.5);
     const introLines = doc.splitTextToSize(note.introText, BODY_W);
-    doc.text(introLines, ML, y + 10);
-    doc.setLineHeightFactor(1.15);
-    y += introLines.length * 7 - 4;
+    const introLineH = 6;
+    for (const line of introLines) {
+      y = ensureSpace(doc, y, introLineH + 2);
+      doc.text(line, ML, y);
+      y += introLineH;
+    }
+    y -= 4;
   }
 
   const hasPrices = note.items.some((item) => (item.netUnitPrice ?? 0) > 0);
@@ -585,7 +619,7 @@ function buildDeliveryNoteDoc(
         5: { cellWidth: 16, halign: 'center' },
         6: { cellWidth: 28, halign: 'right' },
       },
-      margin: { left: ML, right: MR },
+      margin: { left: ML, right: MR, bottom: 28 },
       tableLineColor: SLATE_300,
       tableLineWidth: 0.2,
     });
@@ -621,7 +655,7 @@ function buildDeliveryNoteDoc(
         2: { cellWidth: 20, halign: 'right' },
         3: { cellWidth: 22 },
       },
-      margin: { left: ML, right: MR },
+      margin: { left: ML, right: MR, bottom: 28 },
       tableLineColor: SLATE_300,
       tableLineWidth: 0.2,
     });
@@ -641,8 +675,7 @@ function buildDeliveryNoteDoc(
     drawSignature(doc, profile, y + 6);
   }
 
-  drawModernFooter(doc, profile);
-  return doc;
+  return finalizeDoc(doc, profile);
 }
 
 // ── Letter builder ────────────────────────────────────────────────────────────
@@ -675,21 +708,24 @@ function buildLetterDoc(
   }
 
   // Body text
+  y += 20;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   txt(doc, SLATE_700);
-  doc.setLineHeightFactor(1.5);
   const bodyLines = doc.splitTextToSize(letter.content, BODY_W);
-  doc.text(bodyLines, ML, y + 20);
-  doc.setLineHeightFactor(1.15); // reset to default
-  y += bodyLines.length * 7 + 28;
+  const bodyLineH = 6;
+  for (const line of bodyLines) {
+    y = ensureSpace(doc, y, bodyLineH + 2);
+    doc.text(line, ML, y);
+    y += bodyLineH;
+  }
+  y += 10;
 
   if (profile.signatureOnLetter && profile.signature) {
-    drawSignature(doc, profile, y - 13);
+    drawSignature(doc, profile, y);
   }
 
-  drawModernFooter(doc, profile);
-  return doc;
+  return finalizeDoc(doc, profile);
 }
 
 // ── Receipt builder ───────────────────────────────────────────────────────────
@@ -760,8 +796,7 @@ function buildReceiptDoc(receipt: Receipt, profile: Profile): jsPDF {
     drawSignature(doc, profile, y + 7);
   }
 
-  drawModernFooter(doc, profile);
-  return doc;
+  return finalizeDoc(doc, profile);
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
