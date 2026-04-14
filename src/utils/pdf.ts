@@ -489,7 +489,7 @@ function buildDeliveryNoteDoc(
     const introLines = doc.splitTextToSize(note.introText, BODY_W);
     doc.text(introLines, ML, y);
     doc.setLineHeightFactor(1.15);
-    y += introLines.length * 7 + 1;
+    y += introLines.length * 7 - 14;
   }
 
   const hasPrices = note.items.some((item) => (item.netUnitPrice ?? 0) > 0);
