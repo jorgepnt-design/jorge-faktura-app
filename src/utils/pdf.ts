@@ -606,7 +606,7 @@ function buildLetterDoc(
     '',
   );
 
-  y = drawDocTitle(doc, letter.title, y + 4);
+  y = drawDocTitle(doc, letter.title, y + 24);
 
   if (customer) {
     const fromLines = profileAddressLines(profile);
