@@ -464,7 +464,7 @@ function buildDeliveryNoteDoc(
     formatDate(note.deliveryDate),
   );
 
-  y = drawDocTitle(doc, 'Lieferschein', y + 4);
+  y = drawDocTitle(doc, 'Lieferschein', y + 24);
 
   const fromLines = profileAddressLines(profile);
   const toLines = customer ? customerAddressLines(customer) : [];
