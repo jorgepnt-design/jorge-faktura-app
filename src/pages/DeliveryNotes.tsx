@@ -10,6 +10,7 @@ import ConfirmDialog from '../components/common/ConfirmDialog';
 import EmptyState from '../components/common/EmptyState';
 import { FormField, Input, Textarea, Select } from '../components/common/FormField';
 import TemplateTextSelector from '../components/templates/TemplateTextSelector';
+import ShareModal from '../components/common/ShareModal';
 import { DeliveryNote, DeliveryNoteItem, DeliveryNoteStatus } from '../types';
 import {
   formatCurrency, formatDate, getStatusColor, getStatusLabel,
@@ -522,29 +523,16 @@ export default function DeliveryNotes() {
       />
 
       {/* Share modal */}
-      <Modal isOpen={!!shareBlobUrl} onClose={closeShare} title="Lieferschein teilen" size="sm"
-        footer={<Button variant="secondary" fullWidth onClick={closeShare}>Schließen</Button>}>
-        <div className="space-y-3">
-          <button onClick={() => { const a = document.createElement('a'); a.href = shareBlobUrl!; a.download = shareFilename; a.click(); }}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-brand-600 text-white font-medium hover:bg-brand-700 transition-colors">
-            <Download className="w-5 h-5" /> PDF herunterladen
-          </button>
-          <div className="space-y-2">
-            <input type="email" value={shareEmail} onChange={(e) => setShareEmail(e.target.value)}
-              placeholder="Empfänger E-Mail (optional)"
-              className="w-full h-10 px-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
-            <button onClick={() => window.location.href = `mailto:${shareEmail}?subject=${encodeURIComponent(shareSubject)}&body=${encodeURIComponent(shareBody)}`}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition-colors">
-              <Mail className="w-5 h-5 text-blue-500" /> Per E-Mail senden
-            </button>
-          </div>
-          <button onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(shareSubject + '\n\n' + shareBody)}`, '_blank')}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition-colors">
-            <MessageCircle className="w-5 h-5 text-green-500" /> Per WhatsApp teilen
-          </button>
-          <p className="text-xs text-slate-400 text-center">PDF herunterladen, dann in WhatsApp/E-Mail anhängen</p>
-        </div>
-      </Modal>
+      <ShareModal
+        isOpen={!!shareBlobUrl}
+        onClose={closeShare}
+        blobUrl={shareBlobUrl}
+        filename={shareFilename}
+        subject={shareSubject}
+        bodyText={shareBody}
+        recipientEmail={shareEmail}
+        onEmailChange={setShareEmail}
+      />
     </div>
   );
 }
