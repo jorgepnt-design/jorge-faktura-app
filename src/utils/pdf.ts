@@ -18,10 +18,12 @@ const T: Record<Lang, {
   netAmount: string;
   totalAmount: string;
   vatLabel: (rate: number) => string;
+  from: string;
+  to: string;
 }> = {
   de: {
     invoice:       'Rechnung',
-    nr:            'Nr',
+    nr:            'Rechnungs-Nr.',
     datum:         'Datum',
     servicePeriod: 'Leistungszeitraum',
     dueDate:       'Fällig bis',
@@ -31,10 +33,12 @@ const T: Record<Lang, {
     netAmount:     'Nettobetrag',
     totalAmount:   'Gesamtbetrag',
     vatLabel:      (rate) => `MwSt. ${rate}%:`,
+    from:          'VON',
+    to:            'AN',
   },
   en: {
     invoice:       'Invoice',
-    nr:            'No',
+    nr:            'Invoice No.',
     datum:         'Date',
     servicePeriod: 'Service Period',
     dueDate:       'Due Date',
@@ -44,255 +48,264 @@ const T: Record<Lang, {
     netAmount:     'Net Amount',
     totalAmount:   'Total Amount',
     vatLabel:      (rate) => `VAT ${rate}%:`,
+    from:          'FROM',
+    to:            'TO',
   },
 };
 
 // ── Color palette ────────────────────────────────────────────────────────────
 type RGB = [number, number, number];
-const PRIMARY: RGB    = [30,  64, 175];  // blue-800
-const ACCENT: RGB     = [59, 130, 246];  // blue-500
+const NAVY: RGB       = [26,  35,  64];   // dark navy
+const GOLD: RGB       = [212, 160,  23];  // gold text / labels
+const GOLD_BG: RGB    = [240, 192,  48];  // gold highlight background
 const SLATE_900: RGB  = [15,  23,  42];
 const SLATE_700: RGB  = [51,  65,  85];
 const SLATE_500: RGB  = [100, 116, 139];
 const SLATE_300: RGB  = [203, 213, 225];
 const SLATE_100: RGB  = [241, 245, 249];
-const BLUE_50: RGB    = [239, 246, 255];
 const WHITE: RGB      = [255, 255, 255];
 
 // ── Layout constants ─────────────────────────────────────────────────────────
 const PAGE_W   = 210;
+const PAGE_H   = 297;
 const ML       = 14;   // margin left
 const MR       = 14;   // margin right
 const BODY_W   = PAGE_W - ML - MR; // 182 mm
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Low-level helpers ────────────────────────────────────────────────────────
 const fill = (doc: jsPDF, c: RGB) => doc.setFillColor(c[0], c[1], c[2]);
 const draw = (doc: jsPDF, c: RGB) => doc.setDrawColor(c[0], c[1], c[2]);
-const text = (doc: jsPDF, c: RGB) => doc.setTextColor(c[0], c[1], c[2]);
+const txt  = (doc: jsPDF, c: RGB) => doc.setTextColor(c[0], c[1], c[2]);
 
-// ── Shared header (company branding + accent rule) ───────────────────────────
-function drawBrandHeader(doc: jsPDF, profile: Profile): number {
-  let y = 15;
+// ── Address helpers ───────────────────────────────────────────────────────────
+function profileAddressLines(profile: Profile): string[] {
+  return [
+    profile.companyName || profile.internalName,
+    profile.personName || '',
+    profile.address || '',
+    [profile.zipCode, profile.city].filter(Boolean).join(' '),
+    profile.email || '',
+    profile.phone || profile.mobile || '',
+  ].filter(Boolean);
+}
+
+function customerAddressLines(customer: Customer): string[] {
+  return [
+    customer.companyName,
+    customer.contactPerson || '',
+    customer.address || '',
+    [customer.zipCode, customer.city].filter(Boolean).join(' '),
+    customer.country && customer.country !== 'Deutschland' ? customer.country : '',
+  ].filter(Boolean);
+}
+
+// ── Modern header: gold strip + navy bar ─────────────────────────────────────
+function drawModernHeader(
+  doc: jsPDF,
+  profile: Profile,
+  numLabel: string,
+  numValue: string,
+  dateValue: string,
+): number {
+  // Gold accent strip (3 mm)
+  fill(doc, GOLD_BG);
+  draw(doc, GOLD_BG);
+  doc.rect(0, 0, PAGE_W, 3, 'F');
+
+  // Navy header bar (38 mm)
+  fill(doc, NAVY);
+  draw(doc, NAVY);
+  doc.rect(0, 3, PAGE_W, 38, 'F');
+
+  // Logo (top-left inside navy bar)
   let nameX = ML;
-
   if (profile.logo) {
     try {
       const imgType = profile.logo.startsWith('data:image/png') ? 'PNG' : 'JPEG';
-      doc.addImage(profile.logo, imgType, ML, y, 32, 14);
-      nameX = ML + 36;
+      doc.addImage(profile.logo, imgType, ML, 7, 28, 12);
+      nameX = ML + 32;
     } catch { /* skip invalid logo */ }
   }
 
   // Company name
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
-  text(doc, SLATE_900);
-  doc.text(profile.companyName || profile.internalName, nameX, y + 9);
+  txt(doc, WHITE);
+  doc.text(profile.companyName || profile.internalName, nameX, 17);
 
-  // Person / subtitle
   if (profile.personName) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
-    text(doc, SLATE_500);
-    doc.text(profile.personName, nameX, y + 15);
+    txt(doc, GOLD_BG);
+    doc.text(profile.personName, nameX, 23);
   }
 
-  // Contact details (right-aligned)
-  const contactLines: string[] = [
-    [profile.address, `${profile.zipCode} ${profile.city}`.trim()].filter(Boolean).join(', '),
+  // Small contact lines under name
+  const contactLines = [
+    [profile.address, [profile.zipCode, profile.city].filter(Boolean).join(' ')].filter(Boolean).join(', '),
     profile.email,
     profile.phone || profile.mobile,
-    profile.website,
-  ].filter(Boolean);
+  ].filter(Boolean) as string[];
 
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  txt(doc, SLATE_300);
+  contactLines.forEach((line, i) => {
+    doc.text(line, nameX, 28 + i * 4);
+  });
+
+  // Document number + date (right side of navy bar)
+  const rightX = PAGE_W - MR;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  text(doc, SLATE_500);
-  contactLines.forEach((line, i) => {
-    doc.text(line, PAGE_W - MR, y + 7 + i * 4.5, { align: 'right' });
-  });
-
-  y += 22;
-
-  // Accent rule
-  draw(doc, ACCENT);
-  doc.setLineWidth(0.6);
-  doc.line(ML, y, PAGE_W - MR, y);
-  doc.setLineWidth(0.2);
-
-  return y + 8; // return y after the rule
-}
-
-// ── Document meta box (right column, below header) ───────────────────────────
-function drawMetaBox(
-  doc: jsPDF,
-  title: string,
-  docNumber: string,
-  docDate: string,
-  extraMeta: Array<{ label: string; value: string }>,
-  y: number,
-  lang: Lang = 'de'
-): void {
-  const boxX = 120;
-  const boxW  = PAGE_W - MR - boxX; // ~76 mm
-  const rows  = extraMeta.filter((m) => m.value).length;
-  const boxH  = 10 + 7 + (2 + rows) * 5.5 + 4;
-
-  fill(doc, BLUE_50);
-  draw(doc, SLATE_300);
-  doc.setLineWidth(0.3);
-  doc.roundedRect(boxX, y - 2, boxW, boxH, 2, 2, 'FD');
-
-  // Title
+  txt(doc, GOLD_BG);
+  doc.text(numLabel, rightX, 20, { align: 'right' });
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(13);
-  text(doc, PRIMARY);
-  doc.text(title.toUpperCase(), boxX + boxW / 2, y + 7, { align: 'center' });
-
-  // Details
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
-  text(doc, SLATE_700);
-  let dy = y + 14;
-  doc.text(`${T[lang].nr}: ${docNumber}`, boxX + 4, dy);
-  dy += 5.5;
-  doc.text(`${T[lang].datum}: ${formatDate(docDate)}`, boxX + 4, dy);
-
-  extraMeta.forEach(({ label, value }) => {
-    if (value) {
-      dy += 5.5;
-      doc.text(`${label}: ${value}`, boxX + 4, dy);
-    }
-  });
-}
-
-// ── Recipient address block (left column, DIN 5008 style) ────────────────────
-function drawAddressBlock(
-  doc: jsPDF,
-  profile: Profile,
-  customer: Customer,
-  y: number
-): void {
-  // Tiny sender reference line (for windowed envelope)
-  const senderRef = [
-    profile.companyName || profile.internalName,
-    profile.address,
-    `${profile.zipCode} ${profile.city}`.trim(),
-  ].filter(Boolean).join(', ');
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7);
-  text(doc, SLATE_300);
-  doc.text(senderRef, ML, y);
-
-  draw(doc, SLATE_300);
-  doc.setLineWidth(0.15);
-  doc.line(ML, y + 2.5, 110, y + 2.5);
-
-  // Recipient
-  const addrLines = [
-    customer.companyName,
-    customer.contactPerson,
-    customer.address,
-    `${customer.zipCode} ${customer.city}`.trim(),
-    customer.country && customer.country !== 'Deutschland' ? customer.country : '',
-  ].filter(Boolean);
-
-  doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
-  text(doc, SLATE_900);
-  addrLines.forEach((line, i) => {
-    doc.text(line, ML, y + 9 + i * 5.5);
-  });
+  txt(doc, WHITE);
+  doc.text(numValue, rightX, 26, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  txt(doc, SLATE_300);
+  doc.text(dateValue, rightX, 33, { align: 'right' });
+
+  return 41; // y after header
 }
 
-// ── Totals section ────────────────────────────────────────────────────────────
-function drawTotals(
+// ── Document title with gold underline ───────────────────────────────────────
+function drawDocTitle(doc: jsPDF, title: string, y: number): number {
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(22);
+  txt(doc, NAVY);
+  doc.text(title, ML, y);
+
+  // Gold underline rect
+  fill(doc, GOLD);
+  doc.rect(ML, y + 2, BODY_W, 0.8, 'F');
+
+  return y + 10;
+}
+
+// ── FROM / TO two-column section ─────────────────────────────────────────────
+function drawFromTo(
+  doc: jsPDF,
+  fromLabel: string,
+  fromLines: string[],
+  toLabel: string,
+  toLines: string[],
+  y: number,
+): number {
+  const colW = BODY_W / 2 - 4;
+
+  // FROM column
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  txt(doc, GOLD);
+  doc.text(fromLabel, ML, y);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  txt(doc, SLATE_700);
+  fromLines.forEach((line, i) => {
+    doc.text(line, ML, y + 5 + i * 5);
+  });
+
+  // TO column
+  const toX = ML + colW + 8;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  txt(doc, GOLD);
+  doc.text(toLabel, toX, y);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  txt(doc, SLATE_900);
+  toLines.forEach((line, i) => {
+    doc.text(line, toX, y + 5 + i * 5);
+  });
+
+  const maxLines = Math.max(fromLines.length, toLines.length);
+  return y + 5 + maxLines * 5 + 6;
+}
+
+// ── Totals box ────────────────────────────────────────────────────────────────
+function drawModernTotals(
   doc: jsPDF,
   netTotal: number,
   vatTotals: { rate: number; amount: number }[],
   grossTotal: number,
   startY: number,
-  lang: Lang = 'de'
+  lang: Lang = 'de',
 ): number {
-  const boxX = 120;
-  const boxW  = PAGE_W - MR - boxX;
-  const rows  = vatTotals.length + 1; // net + vat rows
-  const innerH = rows * 6.5 + 4;
-  const totalRowH = 10;
-  const boxH  = innerH + totalRowH + 2;
+  const boxX = ML + BODY_W * 0.45;
+  const boxW = PAGE_W - MR - boxX;
+  const rowH = 7;
+  const rows = 1 + vatTotals.length; // net + vat rows
+  const innerH = rows * rowH;
+  const totalH = 9;
+  const boxH = innerH + 2 + totalH;
 
+  // Background for inner rows
   fill(doc, SLATE_100);
   draw(doc, SLATE_300);
-  doc.setLineWidth(0.3);
-  doc.roundedRect(boxX, startY, boxW, boxH, 2, 2, 'FD');
+  doc.setLineWidth(0.2);
+  doc.roundedRect(boxX, startY, boxW, innerH + 2, 2, 2, 'FD');
 
-  let ty = startY + 8;
+  let ty = startY + rowH - 1;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  text(doc, SLATE_700);
+  txt(doc, SLATE_700);
 
-  // Net total
-  doc.text(`${T[lang].netAmount}:`, boxX + 4, ty);
+  doc.text(`${T[lang].netAmount}:`, boxX + 3, ty);
   doc.text(formatCurrency(netTotal), PAGE_W - MR - 3, ty, { align: 'right' });
-  ty += 6.5;
+  ty += rowH;
 
-  // VAT rows
   vatTotals.forEach((vt) => {
-    doc.text(T[lang].vatLabel(vt.rate), boxX + 4, ty);
+    doc.text(T[lang].vatLabel(vt.rate), boxX + 3, ty);
     doc.text(formatCurrency(vt.amount), PAGE_W - MR - 3, ty, { align: 'right' });
-    ty += 6.5;
+    ty += rowH;
   });
 
-  // Separator inside box
-  draw(doc, SLATE_300);
-  doc.setLineWidth(0.3);
-  doc.line(boxX + 3, ty - 1, PAGE_W - MR - 3, ty - 1);
-  ty += 3;
-
-  // Gross total (colored row)
-  fill(doc, PRIMARY);
-  draw(doc, PRIMARY);
-  doc.roundedRect(boxX, ty - 5, boxW, totalRowH, 2, 2, 'F');
+  // Gold total row
+  fill(doc, GOLD_BG);
+  draw(doc, GOLD_BG);
+  doc.roundedRect(boxX, startY + innerH + 2, boxW, totalH, 2, 2, 'F');
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
-  text(doc, WHITE);
-  doc.text(`${T[lang].totalAmount}:`, boxX + 4, ty + 1);
-  doc.text(formatCurrency(grossTotal), PAGE_W - MR - 3, ty + 1, { align: 'right' });
+  txt(doc, NAVY);
+  doc.text(`${T[lang].totalAmount}:`, boxX + 3, startY + innerH + 2 + totalH - 2);
+  doc.text(formatCurrency(grossTotal), PAGE_W - MR - 3, startY + innerH + 2 + totalH - 2, { align: 'right' });
 
   return startY + boxH + 10;
 }
 
-// ── Payment text box ──────────────────────────────────────────────────────────
-function drawPaymentBox(doc: jsPDF, paymentText: string, y: number): number {
-  const lines = doc.splitTextToSize(paymentText, BODY_W - 8);
-  const boxH  = lines.length * 4.5 + 8;
-
-  fill(doc, BLUE_50);
-  draw(doc, SLATE_300);
-  doc.setLineWidth(0.2);
-  doc.roundedRect(ML, y, BODY_W, boxH, 2, 2, 'FD');
+// ── Text block (notes / payment) ──────────────────────────────────────────────
+function drawTextBlock(doc: jsPDF, label: string, content: string, y: number): number {
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  txt(doc, GOLD);
+  doc.text(label.toUpperCase(), ML, y);
+  y += 4;
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  text(doc, SLATE_700);
-  doc.text(lines, ML + 4, y + 6);
-
-  return y + boxH + 8;
+  doc.setFontSize(9.5);
+  txt(doc, SLATE_700);
+  const lines = doc.splitTextToSize(content, BODY_W);
+  doc.text(lines, ML, y);
+  return y + lines.length * 5 + 6;
 }
 
-// ── Signature ────────────────────────────────────────────────────────────────
+// ── Signature ─────────────────────────────────────────────────────────────────
 function drawSignature(doc: jsPDF, profile: Profile, y: number): number {
   if (!profile.signature) return y;
   try {
     const imgType = profile.signature.startsWith('data:image/png') ? 'PNG' : 'JPEG';
-    // Draw signature image (max 60mm wide, 20mm tall)
     doc.addImage(profile.signature, imgType, ML, y, 60, 20);
     draw(doc, SLATE_300);
     doc.setLineWidth(0.3);
     doc.line(ML, y + 22, ML + 60, y + 22);
-    text(doc, SLATE_500);
+    txt(doc, SLATE_500);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.text(profile.personName || profile.companyName || '', ML, y + 26);
@@ -300,65 +313,88 @@ function drawSignature(doc: jsPDF, profile: Profile, y: number): number {
   return y + 26;
 }
 
-// ── Professional footer ───────────────────────────────────────────────────────
-function drawFooter(doc: jsPDF, profile: Profile): void {
-  const pageH = doc.internal.pageSize.getHeight();
+// ── Modern footer: navy bar ───────────────────────────────────────────────────
+function drawModernFooter(doc: jsPDF, profile: Profile): void {
+  const footerY = PAGE_H - 18;
 
-  draw(doc, SLATE_300);
-  doc.setLineWidth(0.4);
-  doc.line(ML, pageH - 20, PAGE_W - MR, pageH - 20);
+  // Gold accent line above footer
+  fill(doc, GOLD);
+  doc.rect(0, footerY - 1, PAGE_W, 0.8, 'F');
+
+  // Navy footer bar
+  fill(doc, NAVY);
+  draw(doc, NAVY);
+  doc.rect(0, footerY, PAGE_W, 18, 'F');
 
   const parts: string[] = [];
-  if (profile.iban)       parts.push(`IBAN: ${profile.iban}`);
-  if (profile.bic)        parts.push(`BIC: ${profile.bic}`);
-  if (profile.bankName)   parts.push(profile.bankName);
-  if (profile.vatId)      parts.push(`USt-IdNr.: ${profile.vatId}`);
-  if (profile.taxNumber)  parts.push(`St-Nr.: ${profile.taxNumber}`);
+  if (profile.iban)      parts.push(`IBAN: ${profile.iban}`);
+  if (profile.bic)       parts.push(`BIC: ${profile.bic}`);
+  if (profile.bankName)  parts.push(profile.bankName);
+  if (profile.vatId)     parts.push(`USt-IdNr.: ${profile.vatId}`);
+  if (profile.taxNumber) parts.push(`St-Nr.: ${profile.taxNumber}`);
+  if (profile.website)   parts.push(profile.website);
 
   const footerText = profile.pdfFooter || parts.join('  ·  ');
+
   if (footerText) {
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
-    text(doc, SLATE_500);
+    doc.setFontSize(7);
+    txt(doc, SLATE_300);
     const lines = doc.splitTextToSize(footerText, BODY_W);
-    doc.text(lines, PAGE_W / 2, pageH - 14, { align: 'center' });
+    doc.text(lines, PAGE_W / 2, footerY + 6, { align: 'center' });
+  }
+
+  // Email + phone (right)
+  const contact = [profile.email, profile.phone || profile.mobile].filter(Boolean).join('  ·  ');
+  if (contact) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    txt(doc, GOLD_BG);
+    doc.text(contact, PAGE_W - MR, footerY + 12, { align: 'right' });
   }
 }
 
-// ── Invoice PDF ───────────────────────────────────────────────────────────────
-export function generateInvoicePDF(
+// ── Invoice builder ───────────────────────────────────────────────────────────
+function buildInvoiceDoc(
   invoice: Invoice,
   profile: Profile,
-  customer: Customer | null
-) {
+  customer: Customer | null,
+): jsPDF {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const lang: Lang = invoice.language || 'de';
 
-  // Brand header
-  let y = drawBrandHeader(doc, profile);
+  let y = drawModernHeader(
+    doc, profile,
+    T[lang].nr, invoice.invoiceNumber,
+    formatDate(invoice.invoiceDate),
+  );
 
-  // Two-column: address (left) + meta box (right)
-  const sectionY = y;
+  y = drawDocTitle(doc, T[lang].invoice, y + 4);
 
-  drawMetaBox(doc, T[lang].invoice, invoice.invoiceNumber, invoice.invoiceDate, [
-    { label: T[lang].servicePeriod, value: invoice.servicePeriod || '' },
-    { label: T[lang].dueDate, value: invoice.dueDate ? formatDate(invoice.dueDate) : '' },
-  ], sectionY, lang);
-
-  if (customer) {
-    drawAddressBlock(doc, profile, customer, sectionY);
+  // FROM / TO
+  const fromLines = profileAddressLines(profile);
+  const toLines = customer ? customerAddressLines(customer) : [];
+  if (toLines.length > 0) {
+    y = drawFromTo(doc, T[lang].from, fromLines, T[lang].to, toLines, y + 2);
+  } else {
+    y += 4;
   }
 
-  y = sectionY + 42;
+  // Extra meta (service period, due date)
+  const metaItems: string[] = [];
+  if (invoice.servicePeriod) metaItems.push(`${T[lang].servicePeriod}: ${invoice.servicePeriod}`);
+  if (invoice.dueDate)       metaItems.push(`${T[lang].dueDate}: ${formatDate(invoice.dueDate)}`);
+  if (metaItems.length) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    txt(doc, SLATE_500);
+    doc.text(metaItems.join('   '), ML, y);
+    y += 7;
+  }
 
   // Intro text
   if (invoice.introText) {
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9.5);
-    text(doc, SLATE_700);
-    const lines = doc.splitTextToSize(invoice.introText, BODY_W);
-    doc.text(lines, ML, y);
-    y += lines.length * 4.5 + 8;
+    y = drawTextBlock(doc, '', invoice.introText, y);
   }
 
   // Items table
@@ -376,7 +412,7 @@ export function generateInvoicePDF(
     body: tableBody,
     theme: 'plain',
     headStyles: {
-      fillColor: PRIMARY,
+      fillColor: NAVY,
       textColor: WHITE,
       fontStyle: 'bold',
       fontSize: 8.5,
@@ -402,52 +438,52 @@ export function generateInvoicePDF(
   y = (doc as any).lastAutoTable.finalY + 6;
 
   // Totals
-  y = drawTotals(doc, invoice.netTotal, invoice.vatTotals, invoice.grossTotal, y, lang);
+  y = drawModernTotals(doc, invoice.netTotal, invoice.vatTotals, invoice.grossTotal, y, lang);
 
   // Payment text
   if (invoice.paymentText) {
-    y = drawPaymentBox(doc, invoice.paymentText, y);
+    y = drawTextBlock(doc, 'Zahlungshinweis', invoice.paymentText, y);
   }
 
   // Signature
   if (profile.signatureOnInvoice && profile.signature) {
-    y = drawSignature(doc, profile, y + 4);
+    drawSignature(doc, profile, y + 4);
   }
 
-  drawFooter(doc, profile);
-  doc.save(`${invoice.invoiceNumber}.pdf`);
+  drawModernFooter(doc, profile);
+  return doc;
 }
 
-// ── Delivery Note PDF ─────────────────────────────────────────────────────────
-export function generateDeliveryNotePDF(
+// ── Delivery note builder ─────────────────────────────────────────────────────
+function buildDeliveryNoteDoc(
   note: DeliveryNote,
   profile: Profile,
-  customer: Customer | null
-) {
+  customer: Customer | null,
+): jsPDF {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-  let y = drawBrandHeader(doc, profile);
+  let y = drawModernHeader(
+    doc, profile,
+    'Lieferschein-Nr.', note.deliveryNoteNumber,
+    formatDate(note.deliveryDate),
+  );
 
-  const sectionY = y;
-  drawMetaBox(doc, 'Lieferschein', note.deliveryNoteNumber, note.deliveryDate, [], sectionY);
-  if (customer) drawAddressBlock(doc, profile, customer, sectionY);
+  y = drawDocTitle(doc, 'Lieferschein', y + 4);
 
-  y = sectionY + 42;
-
-  // Intro text
-  if (note.introText) {
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9.5);
-    text(doc, SLATE_700);
-    const lines = doc.splitTextToSize(note.introText, BODY_W);
-    doc.text(lines, ML, y);
-    y += lines.length * 4.5 + 8;
+  const fromLines = profileAddressLines(profile);
+  const toLines = customer ? customerAddressLines(customer) : [];
+  if (toLines.length > 0) {
+    y = drawFromTo(doc, 'VON', fromLines, 'AN', toLines, y + 2);
+  } else {
+    y += 4;
   }
 
-  // Determine if any item has a price (to decide which columns to show)
+  if (note.introText) {
+    y = drawTextBlock(doc, '', note.introText, y);
+  }
+
   const hasPrices = note.items.some((item) => (item.netUnitPrice ?? 0) > 0);
 
-  // Items table
   if (hasPrices) {
     const tableBody = note.items.map((item, idx) => [
       String(idx + 1),
@@ -465,7 +501,7 @@ export function generateDeliveryNotePDF(
       body: tableBody,
       theme: 'plain',
       headStyles: {
-        fillColor: PRIMARY,
+        fillColor: NAVY,
         textColor: WHITE,
         fontStyle: 'bold',
         fontSize: 8.5,
@@ -490,7 +526,6 @@ export function generateDeliveryNotePDF(
       tableLineWidth: 0.2,
     });
   } else {
-    // Simple table without price columns
     const tableBody = note.items.map((item, idx) => [
       String(idx + 1),
       item.description,
@@ -505,7 +540,7 @@ export function generateDeliveryNotePDF(
       body: tableBody,
       theme: 'plain',
       headStyles: {
-        fillColor: PRIMARY,
+        fillColor: NAVY,
         textColor: WHITE,
         fontStyle: 'bold',
         fontSize: 8.5,
@@ -530,31 +565,19 @@ export function generateDeliveryNotePDF(
 
   y = (doc as any).lastAutoTable.finalY + 8;
 
-  // Totals (only when prices are set)
   if (hasPrices) {
-    y = drawTotals(doc, note.netTotal ?? 0, note.vatTotals ?? [], note.grossTotal ?? 0, y);
+    y = drawModernTotals(doc, note.netTotal ?? 0, note.vatTotals ?? [], note.grossTotal ?? 0, y);
   }
 
-  // Note text box
   if (note.noteText) {
-    fill(doc, SLATE_100);
-    draw(doc, SLATE_300);
-    doc.setLineWidth(0.2);
-    const noteLines = doc.splitTextToSize(note.noteText, BODY_W - 8);
-    const boxH = noteLines.length * 4.5 + 8;
-    doc.roundedRect(ML, y, BODY_W, boxH, 2, 2, 'FD');
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    text(doc, SLATE_700);
-    doc.text(noteLines, ML + 4, y + 6);
-    y += boxH + 10;
+    y = drawTextBlock(doc, 'Bemerkung', note.noteText, y);
   }
 
-  // Signature area
+  // Delivery confirmation area
   y += 6;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
-  text(doc, SLATE_500);
+  txt(doc, SLATE_500);
   doc.text('Warenempfang bestätigt:', ML, y);
 
   draw(doc, SLATE_300);
@@ -562,76 +585,58 @@ export function generateDeliveryNotePDF(
   doc.line(ML, y + 16, ML + 72, y + 16);
 
   doc.setFontSize(7.5);
-  text(doc, SLATE_300);
+  txt(doc, SLATE_300);
   doc.text('Unterschrift / Datum', ML, y + 21);
 
-  // Signature
   if (profile.signatureOnDeliveryNote && profile.signature) {
     drawSignature(doc, profile, y + 26);
   }
 
-  drawFooter(doc, profile);
-  doc.save(`${note.deliveryNoteNumber}.pdf`);
+  drawModernFooter(doc, profile);
+  return doc;
 }
 
-// ── Letter PDF ────────────────────────────────────────────────────────────────
-export function generateLetterPDF(
+// ── Letter builder ────────────────────────────────────────────────────────────
+function buildLetterDoc(
   letter: Letter,
   profile: Profile,
-  customer: Customer | null
-) {
+  customer: Customer | null,
+): jsPDF {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-  let y = drawBrandHeader(doc, profile);
+  let y = drawModernHeader(
+    doc, profile,
+    'Datum', formatDate(letter.letterDate),
+    '',
+  );
 
-  // Address + date section
-  const sectionY = y;
+  y = drawDocTitle(doc, letter.title, y + 4);
 
   if (customer) {
-    drawAddressBlock(doc, profile, customer, sectionY);
-    y = sectionY + 42;
+    const fromLines = profileAddressLines(profile);
+    const toLines = customerAddressLines(customer);
+    y = drawFromTo(doc, 'VON', fromLines, 'AN', toLines, y + 2);
   } else {
-    y = sectionY + 8;
+    y += 4;
   }
-
-  // Date (right-aligned, at top of address section)
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  text(doc, SLATE_500);
-  doc.text(formatDate(letter.letterDate), PAGE_W - MR, sectionY + 8, { align: 'right' });
-
-  // Subject / Title
-  y += 4;
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(13);
-  text(doc, SLATE_900);
-  doc.text(letter.title, ML, y);
-  y += 7;
-
-  draw(doc, SLATE_300);
-  doc.setLineWidth(0.3);
-  doc.line(ML, y, PAGE_W - MR, y);
-  y += 9;
 
   // Body text
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
-  text(doc, SLATE_700);
+  txt(doc, SLATE_700);
   const bodyLines = doc.splitTextToSize(letter.content, BODY_W);
   doc.text(bodyLines, ML, y);
   y += bodyLines.length * 5 + 8;
 
-  // Signature
   if (profile.signatureOnLetter && profile.signature) {
     drawSignature(doc, profile, y);
   }
 
-  drawFooter(doc, profile);
-  doc.save(`${letter.title || 'Schreiben'}.pdf`);
+  drawModernFooter(doc, profile);
+  return doc;
 }
 
-// ── Receipt PDF ───────────────────────────────────────────────────────────────
-
+// ── Receipt builder ───────────────────────────────────────────────────────────
 const PAYMENT_METHOD_LABEL: Record<string, string> = {
   bar: 'Bar',
   überweisung: 'Überweisung',
@@ -639,112 +644,126 @@ const PAYMENT_METHOD_LABEL: Record<string, string> = {
   sonstige: 'Sonstige',
 };
 
-export function generateReceiptPDF(receipt: Receipt, profile: Profile): void {
-  buildReceiptDoc(receipt, profile).save(`Quittung-${receipt.receiptNumber}.pdf`);
-}
-
-export function getReceiptPdfBlob(receipt: Receipt, profile: Profile): Blob {
-  return buildReceiptDoc(receipt, profile).output('blob');
-}
-
 function buildReceiptDoc(receipt: Receipt, profile: Profile): jsPDF {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  let y = drawBrandHeader(doc, profile);
-  y += 6;
 
-  // Title row
-  fill(doc, PRIMARY);
-  doc.setFillColor(PRIMARY[0], PRIMARY[1], PRIMARY[2]);
-  doc.roundedRect(ML, y, BODY_W, 12, 2, 2, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(13);
-  text(doc, WHITE);
-  doc.text('QUITTUNG', ML + 4, y + 8);
-  doc.setFontSize(10);
-  doc.text(receipt.receiptNumber, PAGE_W - MR - 4, y + 8, { align: 'right' });
-  y += 18;
+  let y = drawModernHeader(
+    doc, profile,
+    'Quittungs-Nr.', receipt.receiptNumber,
+    formatDate(receipt.date),
+  );
 
-  // Date line
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  text(doc, SLATE_500);
-  doc.text(`Datum: ${formatDate(receipt.date)}`, PAGE_W - MR, y, { align: 'right' });
-  y += 10;
+  y = drawDocTitle(doc, 'Quittung', y + 4);
+  y += 4;
 
-  // Info box
   const rows: [string, string][] = [
     ['Empfangen von', receipt.payerName || '–'],
-    ['Betrag', formatCurrency(receipt.amount)],
     ['Verwendungszweck', receipt.purpose || '–'],
     ['Zahlungsart', PAYMENT_METHOD_LABEL[receipt.paymentMethod] || receipt.paymentMethod],
   ];
   if (receipt.notes) rows.push(['Bemerkung', receipt.notes]);
 
   rows.forEach(([label, value]) => {
-    fill(doc, SLATE_100);
-    doc.setFillColor(SLATE_100[0], SLATE_100[1], SLATE_100[2]);
-    doc.roundedRect(ML, y, BODY_W, 8, 1, 1, 'F');
+    // Row with gold label
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    text(doc, SLATE_500);
-    doc.text(label, ML + 3, y + 5.5);
+    doc.setFontSize(8);
+    txt(doc, GOLD);
+    doc.text(label.toUpperCase(), ML, y);
+
     doc.setFont('helvetica', 'normal');
-    text(doc, SLATE_900);
-    const valLines = doc.splitTextToSize(value, BODY_W * 0.6);
-    doc.text(valLines, ML + 55, y + 5.5);
-    y += 10;
+    doc.setFontSize(10);
+    txt(doc, SLATE_900);
+    const valLines = doc.splitTextToSize(value, BODY_W - 60);
+    doc.text(valLines, ML + 55, y);
+
+    // Thin separator
+    fill(doc, SLATE_100);
+    doc.rect(ML, y + 3, BODY_W, 0.3, 'F');
+    y += Math.max(valLines.length * 5, 6) + 6;
   });
 
-  y += 8;
+  y += 4;
+
+  // Gold amount highlight box
+  fill(doc, GOLD_BG);
+  draw(doc, GOLD_BG);
+  doc.roundedRect(ML, y, BODY_W, 16, 3, 3, 'F');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  txt(doc, NAVY);
+  doc.text('BETRAG', ML + 6, y + 10);
+
+  doc.setFontSize(16);
+  txt(doc, NAVY);
+  doc.text(formatCurrency(receipt.amount), PAGE_W - MR - 6, y + 10, { align: 'right' });
+  y += 24;
 
   // Signature
   if (profile.signature) {
     drawSignature(doc, profile, y);
-    y += 28;
   }
 
-  drawFooter(doc, profile);
+  drawModernFooter(doc, profile);
   return doc;
 }
 
-// ── PDF blob helpers (for sharing) ────────────────────────────────────────────
+// ── Public API ────────────────────────────────────────────────────────────────
 
-export function getInvoicePdfBlob(invoice: Invoice, profile: Profile, customer: Customer): Blob {
-  // We need to re-build without saving — wrap the existing function approach
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  // Re-use the internal builder by generating and capturing
-  // Since generateInvoicePDF calls doc.save(), we use a workaround:
-  // temporarily override save, generate, then restore.
-  const original = jsPDF.prototype.save;
-  let capturedBlob: Blob | null = null;
-  jsPDF.prototype.save = function () {
-    capturedBlob = this.output('blob');
-  } as unknown as typeof jsPDF.prototype.save;
-  generateInvoicePDF(invoice, profile, customer);
-  jsPDF.prototype.save = original;
-  return capturedBlob ?? doc.output('blob');
+export function generateInvoicePDF(
+  invoice: Invoice,
+  profile: Profile,
+  customer: Customer | null,
+): void {
+  buildInvoiceDoc(invoice, profile, customer).save(`${invoice.invoiceNumber}.pdf`);
 }
 
-export function getDeliveryNotePdfBlob(dn: DeliveryNote, profile: Profile, customer: Customer): Blob {
-  const original = jsPDF.prototype.save;
-  let capturedBlob: Blob | null = null;
-  jsPDF.prototype.save = function () {
-    capturedBlob = this.output('blob');
-  } as unknown as typeof jsPDF.prototype.save;
-  generateDeliveryNotePDF(dn, profile, customer);
-  jsPDF.prototype.save = original;
-  return capturedBlob ?? new jsPDF().output('blob');
+export function getInvoicePdfBlob(
+  invoice: Invoice,
+  profile: Profile,
+  customer: Customer | null,
+): Blob {
+  return buildInvoiceDoc(invoice, profile, customer).output('blob');
 }
 
-export function getLetterPdfBlob(letter: Letter, profile: Profile, customer: Customer | null): Blob {
-  const original = jsPDF.prototype.save;
-  let capturedBlob: Blob | null = null;
-  jsPDF.prototype.save = function () {
-    capturedBlob = this.output('blob');
-  } as unknown as typeof jsPDF.prototype.save;
-  generateLetterPDF(letter, profile, customer);
-  jsPDF.prototype.save = original;
-  return capturedBlob ?? new jsPDF().output('blob');
+export function generateDeliveryNotePDF(
+  note: DeliveryNote,
+  profile: Profile,
+  customer: Customer | null,
+): void {
+  buildDeliveryNoteDoc(note, profile, customer).save(`${note.deliveryNoteNumber}.pdf`);
+}
+
+export function getDeliveryNotePdfBlob(
+  dn: DeliveryNote,
+  profile: Profile,
+  customer: Customer | null,
+): Blob {
+  return buildDeliveryNoteDoc(dn, profile, customer).output('blob');
+}
+
+export function generateLetterPDF(
+  letter: Letter,
+  profile: Profile,
+  customer: Customer | null,
+): void {
+  buildLetterDoc(letter, profile, customer).save(`${letter.title || 'Schreiben'}.pdf`);
+}
+
+export function getLetterPdfBlob(
+  letter: Letter,
+  profile: Profile,
+  customer: Customer | null,
+): Blob {
+  return buildLetterDoc(letter, profile, customer).output('blob');
+}
+
+export function generateReceiptPDF(receipt: Receipt, profile: Profile): void {
+  buildReceiptDoc(receipt, profile).save(`Quittung-${receipt.receiptNumber}.pdf`);
+}
+
+export function getReceiptPdfBlob(receipt: Receipt, profile: Profile): Blob {
+  return buildReceiptDoc(receipt, profile).output('blob');
 }
 
 /** Share a PDF blob via Web Share API (mobile) or fallback to download + WhatsApp/Email modal trigger. */
