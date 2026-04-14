@@ -365,7 +365,7 @@ function buildInvoiceDoc(
     formatDate(invoice.invoiceDate),
   );
 
-  y = drawDocTitle(doc, T[lang].invoice, y + 9);
+  y = drawDocTitle(doc, T[lang].invoice, y + 19);
 
   // FROM / TO
   const fromLines = profileAddressLines(profile);
@@ -697,7 +697,7 @@ function buildReceiptDoc(receipt: Receipt, profile: Profile): jsPDF {
 
   // Signature
   if (profile.signature) {
-    drawSignature(doc, profile, y - 13);
+    drawSignature(doc, profile, y + 7);
   }
 
   drawModernFooter(doc, profile);
