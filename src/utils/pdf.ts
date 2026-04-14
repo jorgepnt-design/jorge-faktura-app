@@ -467,7 +467,14 @@ function buildDeliveryNoteDoc(
   }
 
   if (note.introText) {
-    y = drawTextBlock(doc, '', note.introText, y) - 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.5);
+    txt(doc, SLATE_700);
+    doc.setLineHeightFactor(1.5);
+    const introLines = doc.splitTextToSize(note.introText, BODY_W);
+    doc.text(introLines, ML, y);
+    doc.setLineHeightFactor(1.15);
+    y += introLines.length * 7 + 1;
   }
 
   const hasPrices = note.items.some((item) => (item.netUnitPrice ?? 0) > 0);
