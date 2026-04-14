@@ -119,7 +119,7 @@ function drawModernHeader(
 
   // Logo (top-left inside navy bar)
   let nameX = ML;
-  if (profile.logo) {
+  if (profile.logo && profile.logoOnPdf !== false) {
     try {
       const imgType = profile.logo.startsWith('data:image/png') ? 'PNG' : 'JPEG';
       doc.addImage(profile.logo, imgType, ML, 7, 28, 12);

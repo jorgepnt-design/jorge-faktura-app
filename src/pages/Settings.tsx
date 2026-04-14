@@ -318,6 +318,16 @@ function ProfileEditCard({ profileId }: { profileId: string }) {
           </div>
         </div>
 
+        <label className="flex items-center gap-3 cursor-pointer mb-4">
+          <input
+            type="checkbox"
+            checked={!!form.logoOnPdf}
+            onChange={(e) => setForm((f) => f ? { ...f, logoOnPdf: e.target.checked } : f)}
+            className="w-4 h-4 rounded accent-brand-600"
+          />
+          <span className="text-sm text-slate-700">Logo auf PDF anzeigen</span>
+        </label>
+
         <p className="text-xs font-medium text-slate-600 mb-2">Unterschrift einfügen bei:</p>
         <div className="space-y-2">
           {([

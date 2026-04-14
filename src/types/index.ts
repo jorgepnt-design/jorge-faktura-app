@@ -23,6 +23,7 @@ export interface Profile {
   signatureOnInvoice: boolean;
   signatureOnDeliveryNote: boolean;
   signatureOnLetter: boolean;
+  logoOnPdf: boolean;
   pdfFooter: string;
   invoiceCounter: number;
   deliveryNoteCounter: number;
