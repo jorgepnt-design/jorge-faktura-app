@@ -173,9 +173,9 @@ function drawModernHeader(
 }
 
 // ── Document title with gold underline ───────────────────────────────────────
-function drawDocTitle(doc: jsPDF, title: string, y: number): number {
+function drawDocTitle(doc: jsPDF, title: string, y: number, fontSize = 22): number {
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(22);
+  doc.setFontSize(fontSize);
   txt(doc, NAVY);
   doc.text(title, ML, y);
 
@@ -310,7 +310,7 @@ function drawSignature(doc: jsPDF, profile: Profile, y: number): number {
 }
 
 // ── Modern footer: navy bar ───────────────────────────────────────────────────
-function drawModernFooter(doc: jsPDF, profile: Profile): void {
+function drawModernFooter(doc: jsPDF, profile: Profile, showContact = true): void {
   const footerY = PAGE_H - 18;
 
   // Gold accent line above footer
@@ -342,7 +342,7 @@ function drawModernFooter(doc: jsPDF, profile: Profile): void {
 
   // Email + phone (right)
   const contact = [profile.email, profile.phone || profile.mobile].filter(Boolean).join('  ·  ');
-  if (contact) {
+  if (showContact && contact) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
     txt(doc, GOLD_BG);
@@ -606,7 +606,7 @@ function buildLetterDoc(
     '',
   );
 
-  y = drawDocTitle(doc, letter.title, y + 24);
+  y = drawDocTitle(doc, letter.title, y + 24, 17);
 
   if (customer) {
     const fromLines = profileAddressLines(profile);
@@ -630,7 +630,7 @@ function buildLetterDoc(
     drawSignature(doc, profile, y - 13);
   }
 
-  drawModernFooter(doc, profile);
+  drawModernFooter(doc, profile, false);
   return doc;
 }
 
