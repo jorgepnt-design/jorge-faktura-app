@@ -461,7 +461,12 @@ function buildDeliveryNoteDoc(
 
   y = drawDocTitle(doc, 'Lieferschein / Rechnung', y + 24);
 
-  const fromLines = profileAddressLines(profile);
+  const fromLines = [
+    profile.companyName || profile.internalName,
+    profile.personName || '',
+    profile.address || '',
+    [profile.zipCode, profile.city].filter(Boolean).join(' '),
+  ].filter(Boolean);
   const toLines = customer ? customerAddressLines(customer) : [];
   if (toLines.length > 0) {
     y = drawFromTo(doc, 'VON', fromLines, 'AN', toLines, y + 2);
