@@ -390,7 +390,7 @@ function buildInvoiceDoc(
 
   // Intro text
   if (invoice.introText) {
-    y = drawTextBlock(doc, '', invoice.introText, y);
+    y = drawTextBlock(doc, '', invoice.introText, y) - 5;
   }
 
   // Items table
@@ -475,7 +475,7 @@ function buildDeliveryNoteDoc(
   }
 
   if (note.introText) {
-    y = drawTextBlock(doc, '', note.introText, y);
+    y = drawTextBlock(doc, '', note.introText, y) - 5;
   }
 
   const hasPrices = note.items.some((item) => (item.netUnitPrice ?? 0) > 0);
