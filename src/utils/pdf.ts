@@ -620,9 +620,11 @@ function buildLetterDoc(
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   txt(doc, SLATE_700);
+  doc.setLineHeightFactor(1.5);
   const bodyLines = doc.splitTextToSize(letter.content, BODY_W);
   doc.text(bodyLines, ML, y + 20);
-  y += bodyLines.length * 5 + 28;
+  doc.setLineHeightFactor(1.15); // reset to default
+  y += bodyLines.length * 7 + 28;
 
   if (profile.signatureOnLetter && profile.signature) {
     drawSignature(doc, profile, y - 13);
