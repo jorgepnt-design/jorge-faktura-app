@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, PenLine, MoreVertical, Edit2, Trash2, Download, Share2, Mail, MessageCircle } from 'lucide-react';
+import { Plus, Search, PenLine, MoreVertical, Edit2, Trash2, Download, Share2, Mail, MessageCircle, Copy } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
@@ -29,7 +29,7 @@ function emptyForm(profileId: string): LetterFormData {
 export default function Letters() {
   const {
     profiles, loggedInProfileId, customers, letters, templates,
-    addLetter, updateLetter, deleteLetter,
+    addLetter, updateLetter, deleteLetter, duplicateLetter,
   } = useStore();
 
   const [search, setSearch] = useState('');
@@ -154,6 +154,7 @@ export default function Letters() {
               customerName={customerName(letter.customerId)}
               onEdit={() => openForm(letter)}
               onDelete={() => setDeleteId(letter.id)}
+              onDuplicate={() => duplicateLetter(letter.id)}
               onPDF={() => handlePDF(letter)}
               onShare={() => handleShare(letter)}
             />
@@ -283,11 +284,12 @@ interface LetterCardProps {
   customerName: string;
   onEdit: () => void;
   onDelete: () => void;
+  onDuplicate: () => void;
   onPDF: () => void;
   onShare: () => void;
 }
 
-function LetterCard({ letter, profileName, customerName, onEdit, onDelete, onPDF, onShare }: LetterCardProps) {
+function LetterCard({ letter, profileName, customerName, onEdit, onDelete, onDuplicate, onPDF, onShare }: LetterCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -317,6 +319,9 @@ function LetterCard({ letter, profileName, customerName, onEdit, onDelete, onPDF
                   <div className="absolute right-0 top-9 z-20 bg-white rounded-xl shadow-lg border border-slate-100 py-1 w-40">
                     <button onClick={() => { onEdit(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
                       <Edit2 className="w-4 h-4" /> Bearbeiten
+                    </button>
+                    <button onClick={() => { onDuplicate(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                      <Copy className="w-4 h-4" /> Duplizieren
                     </button>
                     <button onClick={() => { onPDF(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
                       <Download className="w-4 h-4" /> PDF exportieren

@@ -82,11 +82,13 @@ interface AppState {
   addDeliveryNote: (data: Omit<DeliveryNote, 'id' | 'createdAt' | 'updatedAt' | 'deliveryNoteNumber'>) => DeliveryNote;
   updateDeliveryNote: (id: string, data: Partial<DeliveryNote>) => void;
   deleteDeliveryNote: (id: string) => void;
+  duplicateDeliveryNote: (id: string) => void;
 
   // ── Letter ───────────────────────────────────────────────────────────────────
   addLetter: (data: Omit<Letter, 'id' | 'createdAt' | 'updatedAt'>) => Letter;
   updateLetter: (id: string, data: Partial<Letter>) => void;
   deleteLetter: (id: string) => void;
+  duplicateLetter: (id: string) => void;
 
   // ── Receipt ──────────────────────────────────────────────────────────────────
   addReceipt: (data: Omit<Receipt, 'id' | 'createdAt' | 'updatedAt' | 'receiptNumber'>) => Receipt;
@@ -473,6 +475,27 @@ export const useStore = create<AppState>()((set, get) => {
       scheduleSync();
     },
 
+    duplicateDeliveryNote: (id) => {
+      const src = get().deliveryNotes.find((n) => n.id === id);
+      if (!src) return;
+      const profile = get().profiles.find((p) => p.id === src.profileId);
+      if (!profile) return;
+      const counter = profile.deliveryNoteCounter + 1;
+      const copy: DeliveryNote = {
+        ...src,
+        id: generateId(),
+        deliveryNoteNumber: generateDeliveryNoteNumber(counter),
+        status: 'draft',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      set((s) => ({
+        deliveryNotes: [...s.deliveryNotes, copy],
+        profiles: s.profiles.map((p) => p.id === src.profileId ? { ...p, deliveryNoteCounter: counter } : p),
+      }));
+      scheduleSync();
+    },
+
     // ── Letter ────────────────────────────────────────────────────────────────
 
     addLetter: (data) => {
@@ -498,6 +521,19 @@ export const useStore = create<AppState>()((set, get) => {
 
     deleteLetter: (id) => {
       set((s) => ({ letters: s.letters.filter((l) => l.id !== id) }));
+      scheduleSync();
+    },
+
+    duplicateLetter: (id) => {
+      const src = get().letters.find((l) => l.id === id);
+      if (!src) return;
+      const copy: Letter = {
+        ...src,
+        id: generateId(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      set((s) => ({ letters: [...s.letters, copy] }));
       scheduleSync();
     },
 

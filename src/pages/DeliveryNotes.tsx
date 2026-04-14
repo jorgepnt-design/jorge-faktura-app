@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import {
-  Plus, Search, Truck, MoreVertical, Edit2, Trash2,
+  Plus, Search, Truck, MoreVertical, Edit2, Trash2, Copy,
   Download, Package, Trash, RefreshCw, Share2, Mail, MessageCircle,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
@@ -72,7 +72,7 @@ function recalcTotals(items: DeliveryNoteItem[]): Pick<DNFormData, 'netTotal' | 
 export default function DeliveryNotes() {
   const {
     profiles, loggedInProfileId, customers, deliveryNotes, articles,
-    addDeliveryNote, updateDeliveryNote, deleteDeliveryNote,
+    addDeliveryNote, updateDeliveryNote, deleteDeliveryNote, duplicateDeliveryNote,
   } = useStore();
 
   const [search, setSearch] = useState('');
@@ -267,6 +267,7 @@ export default function DeliveryNotes() {
               profileName={profileName(note.profileId)}
               onEdit={() => openForm(note)}
               onDelete={() => setDeleteId(note.id)}
+              onDuplicate={() => duplicateDeliveryNote(note.id)}
               onPDF={() => handlePDF(note)}
               onShare={() => handleShare(note)}
             />
@@ -545,11 +546,12 @@ interface DNCardProps {
   profileName: string;
   onEdit: () => void;
   onDelete: () => void;
+  onDuplicate: () => void;
   onPDF: () => void;
   onShare: () => void;
 }
 
-function DNCard({ note, customerName, profileName, onEdit, onDelete, onPDF, onShare }: DNCardProps) {
+function DNCard({ note, customerName, profileName, onEdit, onDelete, onDuplicate, onPDF, onShare }: DNCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -581,6 +583,9 @@ function DNCard({ note, customerName, profileName, onEdit, onDelete, onPDF, onSh
                     <div className="absolute right-0 top-9 z-20 bg-white rounded-xl shadow-lg border border-slate-100 py-1 w-40">
                       <button onClick={() => { onEdit(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
                         <Edit2 className="w-4 h-4" /> Bearbeiten
+                      </button>
+                      <button onClick={() => { onDuplicate(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                        <Copy className="w-4 h-4" /> Duplizieren
                       </button>
                       <button onClick={() => { onPDF(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
                         <Download className="w-4 h-4" /> PDF exportieren
