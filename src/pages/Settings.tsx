@@ -413,9 +413,14 @@ function ArticleTab() {
 // ─── Datenrettung Tab ─────────────────────────────────────────────────────────
 
 function DatenrettungTab() {
-  const { exportData, importData } = useStore();
+  const { exportData, importData, exportSharedData, importSharedData } = useStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const shareImportRef = useRef<HTMLInputElement>(null);
   const [importMsg, setImportMsg] = useState('');
+  const [shareMsg, setShareMsg] = useState('');
+  const [shareOpts, setShareOpts] = useState({
+    invoices: true, deliveryNotes: true, letters: true, templates: true, articles: true,
+  });
 
   const handleExport = () => {
     const data = exportData();
@@ -441,17 +446,107 @@ function DatenrettungTab() {
     e.target.value = '';
   };
 
+  const handleShareExport = () => {
+    const data = exportSharedData(shareOpts);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `jorge-faktura-freigabe-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleShareImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const result = importSharedData(ev.target?.result as string);
+      if (result.success) {
+        const parts: string[] = [];
+        if (result.imported.invoices)       parts.push(`${result.imported.invoices} Rechnungen`);
+        if (result.imported.deliveryNotes)  parts.push(`${result.imported.deliveryNotes} Lieferscheine`);
+        if (result.imported.letters)        parts.push(`${result.imported.letters} Schreiben`);
+        if (result.imported.templates)      parts.push(`${result.imported.templates} Vorlagen`);
+        if (result.imported.articles)       parts.push(`${result.imported.articles} Artikel`);
+        setShareMsg(`Importiert: ${parts.join(', ')}`);
+      } else {
+        setShareMsg(result.error || 'Fehler beim Import.');
+      }
+      setTimeout(() => setShareMsg(''), 5000);
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  const shareLabels: { key: keyof typeof shareOpts; label: string }[] = [
+    { key: 'invoices',       label: 'Rechnungen' },
+    { key: 'deliveryNotes',  label: 'Lieferscheine' },
+    { key: 'letters',        label: 'Schreiben' },
+    { key: 'templates',      label: 'Vorlagen' },
+    { key: 'articles',       label: 'Artikel' },
+  ];
+
   return (
     <div className="space-y-4">
+
+      {/* Freigabe exportieren */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-        <h2 className="font-semibold text-slate-800 mb-1">Daten exportieren</h2>
+        <h2 className="font-semibold text-slate-800 mb-1">Dokumente freigeben</h2>
+        <p className="text-sm text-slate-400 mb-4">
+          Wähle aus, was du freigeben möchtest. Die Datei kannst du an einen anderen App-Nutzer weitergeben.
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
+          {shareLabels.map(({ key, label }) => (
+            <label key={key} className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={shareOpts[key]}
+                onChange={(e) => setShareOpts((o) => ({ ...o, [key]: e.target.checked }))}
+                className="w-4 h-4 rounded accent-brand-600"
+              />
+              <span className="text-sm text-slate-700">{label}</span>
+            </label>
+          ))}
+        </div>
+        <Button icon={<Download className="w-4 h-4" />} onClick={handleShareExport}
+          disabled={!Object.values(shareOpts).some(Boolean)}>
+          Freigabe exportieren
+        </Button>
+      </div>
+
+      {/* Freigabe importieren */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <h2 className="font-semibold text-slate-800 mb-1">Freigabe importieren</h2>
+        <p className="text-sm text-slate-400 mb-4">
+          Freigabe-Datei eines anderen Nutzers importieren. Bestehende Daten bleiben erhalten.
+        </p>
+        <Button variant="outline" icon={<Upload className="w-4 h-4" />} onClick={() => shareImportRef.current?.click()}>
+          Freigabe importieren
+        </Button>
+        <input ref={shareImportRef} type="file" accept=".json" onChange={handleShareImport} className="hidden" />
+        {shareMsg && (
+          <div className={`mt-3 flex items-center gap-2 text-sm ${shareMsg.startsWith('Fehler') || shareMsg.startsWith('Keine') ? 'text-red-500' : 'text-green-600'}`}>
+            {shareMsg.startsWith('Fehler') || shareMsg.startsWith('Keine')
+              ? <AlertTriangle className="w-4 h-4" />
+              : <CheckCircle className="w-4 h-4" />}
+            {shareMsg}
+          </div>
+        )}
+      </div>
+
+      <div className="border-t border-slate-100" />
+
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <h2 className="font-semibold text-slate-800 mb-1">Vollständiges Backup exportieren</h2>
         <p className="text-sm text-slate-400 mb-4">Alle Daten als JSON-Backup speichern.</p>
         <Button icon={<Download className="w-4 h-4" />} onClick={handleExport}>Backup exportieren</Button>
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-        <h2 className="font-semibold text-slate-800 mb-1">Daten importieren</h2>
-        <p className="text-sm text-slate-400 mb-4">Backup wiederherstellen. Achtung: überschreibt alle aktuellen Daten.</p>
+        <h2 className="font-semibold text-slate-800 mb-1">Backup wiederherstellen</h2>
+        <p className="text-sm text-slate-400 mb-4">Achtung: überschreibt alle aktuellen Daten.</p>
         <Button variant="outline" icon={<Upload className="w-4 h-4" />} onClick={() => fileInputRef.current?.click()}>
           Backup importieren
         </Button>

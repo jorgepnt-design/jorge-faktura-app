@@ -172,6 +172,17 @@ export interface AppSettings {
   dateFormat: string;
 }
 
+export interface ShareData {
+  __type: 'jorge-faktura-share';
+  version: 1;
+  exportedAt: string;
+  invoices?: Invoice[];
+  deliveryNotes?: DeliveryNote[];
+  letters?: Letter[];
+  templates?: Template[];
+  articles?: Article[];
+}
+
 export type PaymentMethod = 'bar' | 'überweisung' | 'karte' | 'sonstige';
 
 export interface Receipt {

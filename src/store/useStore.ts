@@ -102,6 +102,8 @@ interface AppState {
   // ── Export / Import ──────────────────────────────────────────────────────────
   exportData: () => string;
   importData: (json: string) => boolean;
+  exportSharedData: (opts: { invoices: boolean; deliveryNotes: boolean; letters: boolean; templates: boolean; articles: boolean }) => string;
+  importSharedData: (json: string) => { success: boolean; error?: string; imported: Record<string, number> };
 
   // ── Internal ─────────────────────────────────────────────────────────────────
   _syncToCloud: () => Promise<void>;
@@ -587,6 +589,82 @@ export const useStore = create<AppState>()((set, get) => {
     },
 
     // ── Export / Import ───────────────────────────────────────────────────────
+
+    exportSharedData: (opts) => {
+      const { loggedInProfileId, invoices, deliveryNotes, letters, templates, articles } = get();
+      const pid = loggedInProfileId;
+      const data: Record<string, unknown> = {
+        __type: 'jorge-faktura-share',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+      };
+      if (opts.invoices)       data.invoices       = invoices.filter((i) => i.profileId === pid);
+      if (opts.deliveryNotes)  data.deliveryNotes  = deliveryNotes.filter((d) => d.profileId === pid);
+      if (opts.letters)        data.letters        = letters.filter((l) => l.profileId === pid);
+      if (opts.templates)      data.templates      = templates.filter((t) => !t.profileId || t.profileId === pid);
+      if (opts.articles)       data.articles       = articles.filter((a) => !a.profileId || a.profileId === pid);
+      return JSON.stringify(data, null, 2);
+    },
+
+    importSharedData: (json) => {
+      try {
+        const d = JSON.parse(json);
+        if (d.__type !== 'jorge-faktura-share') return { success: false, error: 'Keine gültige Freigabe-Datei.', imported: {} };
+        const { loggedInProfileId } = get();
+        const pid = loggedInProfileId || '';
+        const now = new Date().toISOString();
+        const imported: Record<string, number> = {};
+
+        const newInvoices: Invoice[]           = [];
+        const newDeliveryNotes: DeliveryNote[] = [];
+        const newLetters: Letter[]             = [];
+        const newTemplates: Template[]         = [];
+        const newArticles: Article[]           = [];
+
+        if (Array.isArray(d.invoices)) {
+          for (const inv of d.invoices) {
+            newInvoices.push({ ...inv, id: generateId(), profileId: pid, customerId: '', createdAt: now, updatedAt: now });
+          }
+          imported.invoices = newInvoices.length;
+        }
+        if (Array.isArray(d.deliveryNotes)) {
+          for (const dn of d.deliveryNotes) {
+            newDeliveryNotes.push({ ...dn, id: generateId(), profileId: pid, customerId: '', createdAt: now, updatedAt: now });
+          }
+          imported.deliveryNotes = newDeliveryNotes.length;
+        }
+        if (Array.isArray(d.letters)) {
+          for (const lt of d.letters) {
+            newLetters.push({ ...lt, id: generateId(), profileId: pid, customerId: null, createdAt: now, updatedAt: now });
+          }
+          imported.letters = newLetters.length;
+        }
+        if (Array.isArray(d.templates)) {
+          for (const tpl of d.templates) {
+            newTemplates.push({ ...tpl, id: generateId(), profileId: pid, createdAt: now });
+          }
+          imported.templates = newTemplates.length;
+        }
+        if (Array.isArray(d.articles)) {
+          for (const art of d.articles) {
+            newArticles.push({ ...art, id: generateId(), profileId: pid, createdAt: now });
+          }
+          imported.articles = newArticles.length;
+        }
+
+        set((s) => ({
+          invoices:      [...s.invoices,      ...newInvoices],
+          deliveryNotes: [...s.deliveryNotes, ...newDeliveryNotes],
+          letters:       [...s.letters,       ...newLetters],
+          templates:     [...s.templates,     ...newTemplates],
+          articles:      [...s.articles,      ...newArticles],
+        }));
+        scheduleSync();
+        return { success: true, imported };
+      } catch {
+        return { success: false, error: 'Fehler beim Importieren.', imported: {} };
+      }
+    },
 
     exportData: () => {
       const { profiles, customers, articles, templates, invoices, deliveryNotes, letters, receipts, attachments } = get();
