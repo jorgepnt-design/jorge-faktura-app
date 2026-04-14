@@ -369,7 +369,7 @@ function buildInvoiceDoc(
     formatDate(invoice.invoiceDate),
   );
 
-  y = drawDocTitle(doc, T[lang].invoice, y + 4);
+  y = drawDocTitle(doc, T[lang].invoice, y + 9);
 
   // FROM / TO
   const fromLines = profileAddressLines(profile);
