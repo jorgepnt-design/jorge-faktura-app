@@ -4,7 +4,7 @@ import Header from './Header';
 import BottomNav from './BottomNav';
 import Sidebar from './Sidebar';
 import {
-  LayoutDashboard, Users, FileText, Truck, PenLine, LayoutTemplate, Settings, LogOut
+  LayoutDashboard, Users, FileText, Truck, PenLine, LayoutTemplate, Settings, LogOut, ChevronDown
 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 
@@ -30,7 +30,9 @@ const desktopNav = [
 
 export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { logout } = useStore();
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const { logout, getLoggedInProfile, profiles, switchProfile, loggedInProfileId } = useStore();
+  const profile = getLoggedInProfile();
   const location = useLocation();
 
   const pageTitle = Object.entries(routeTitles).find(
@@ -66,7 +68,48 @@ export default function AppLayout() {
             </NavLink>
           ))}
         </nav>
+        {/* Profile section */}
         <div className="p-3 border-t border-slate-100">
+          {/* Current profile + switcher */}
+          <div className="relative mb-1">
+            <button
+              onClick={() => setProfileMenuOpen((o) => !o)}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-slate-50 transition-colors text-left"
+            >
+              {profile?.logo ? (
+                <img src={profile.logo} alt="" className="w-7 h-7 rounded-lg object-contain flex-shrink-0" />
+              ) : (
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                  {(profile?.internalName || 'P').charAt(0).toUpperCase()}
+                </div>
+              )}
+              <span className="flex-1 text-sm font-medium text-slate-700 truncate">{profile?.internalName || '-'}</span>
+              {profiles.length > 1 && <ChevronDown className="w-4 h-4 text-slate-400 flex-shrink-0" />}
+            </button>
+            {profileMenuOpen && profiles.length > 1 && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setProfileMenuOpen(false)} />
+                <div className="absolute bottom-full left-0 right-0 mb-1 z-20 bg-white rounded-xl shadow-lg border border-slate-100 py-1">
+                  {profiles.filter((p) => p.id !== loggedInProfileId).map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => { switchProfile(p.id); setProfileMenuOpen(false); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 text-left"
+                    >
+                      {p.logo ? (
+                        <img src={p.logo} alt="" className="w-6 h-6 rounded-md object-contain flex-shrink-0" />
+                      ) : (
+                        <div className="w-6 h-6 rounded-md bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white font-bold flex-shrink-0" style={{ fontSize: 9 }}>
+                          {(p.internalName || '?').charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      {p.internalName}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
           <button
             onClick={() => logout()}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-600 transition-colors"

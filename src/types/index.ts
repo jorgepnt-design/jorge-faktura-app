@@ -176,6 +176,7 @@ export interface ShareData {
   __type: 'jorge-faktura-share';
   version: 1;
   exportedAt: string;
+  customers?: Customer[];
   invoices?: Invoice[];
   deliveryNotes?: DeliveryNote[];
   letters?: Letter[];

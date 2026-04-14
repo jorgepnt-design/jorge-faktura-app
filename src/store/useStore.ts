@@ -52,6 +52,8 @@ interface AppState {
   getLoggedInProfile: () => Profile | null;
 
   // ── Profile ──────────────────────────────────────────────────────────────────
+  switchProfile: (id: string) => void;
+  createProfile: (internalName: string) => Profile;
   addProfile: (data: Omit<Profile, 'id' | 'createdAt' | 'invoiceCounter' | 'deliveryNoteCounter'>) => Profile;
   updateProfile: (id: string, data: Partial<Profile>) => void;
   deleteProfile: (id: string) => void;
@@ -102,7 +104,7 @@ interface AppState {
   // ── Export / Import ──────────────────────────────────────────────────────────
   exportData: () => string;
   importData: (json: string) => boolean;
-  exportSharedData: (opts: { invoices: boolean; deliveryNotes: boolean; letters: boolean; templates: boolean; articles: boolean }) => string;
+  exportSharedData: (opts: { customers: boolean; invoices: boolean; deliveryNotes: boolean; letters: boolean; templates: boolean; articles: boolean }) => string;
   importSharedData: (json: string) => { success: boolean; error?: string; imported: Record<string, number> };
 
   // ── Internal ─────────────────────────────────────────────────────────────────
@@ -143,7 +145,14 @@ export const useStore = create<AppState>()((set, get) => {
 
   /** Apply a cloud snapshot to the store and set the logged-in profile. */
   const hydrateFromSnapshot = (userId: string, snap: CloudSnapshot) => {
-    const profileId = snap.profiles[0]?.id ?? userId;
+    let profileId: string | null = null;
+    if (snap.profiles.length === 1) {
+      profileId = snap.profiles[0].id;
+    } else if (snap.profiles.length > 1) {
+      const saved = localStorage.getItem(`lastProfile_${userId}`);
+      const valid = snap.profiles.find((p) => p.id === saved);
+      profileId = valid ? saved : null; // null → show profile picker
+    }
     set({ supabaseUserId: userId, loggedInProfileId: profileId, isLoading: false, ...snap });
   };
 
@@ -277,6 +286,20 @@ export const useStore = create<AppState>()((set, get) => {
     },
 
     // ── Profile ───────────────────────────────────────────────────────────────
+
+    switchProfile: (id) => {
+      const { profiles, supabaseUserId } = get();
+      if (!profiles.find((p) => p.id === id)) return;
+      if (supabaseUserId) localStorage.setItem(`lastProfile_${supabaseUserId}`, id);
+      set({ loggedInProfileId: id });
+    },
+
+    createProfile: (internalName) => {
+      const profile = makeBlankProfile(generateId(), internalName);
+      set((s) => ({ profiles: [...s.profiles, profile] }));
+      scheduleSync();
+      return profile;
+    },
 
     addProfile: (data) => {
       const profile: Profile = {
@@ -591,13 +614,14 @@ export const useStore = create<AppState>()((set, get) => {
     // ── Export / Import ───────────────────────────────────────────────────────
 
     exportSharedData: (opts) => {
-      const { loggedInProfileId, invoices, deliveryNotes, letters, templates, articles } = get();
+      const { loggedInProfileId, invoices, deliveryNotes, letters, templates, articles, customers } = get();
       const pid = loggedInProfileId;
       const data: Record<string, unknown> = {
         __type: 'jorge-faktura-share',
         version: 1,
         exportedAt: new Date().toISOString(),
       };
+      if (opts.customers)      data.customers      = customers.filter((c) => c.profileId === pid);
       if (opts.invoices)       data.invoices       = invoices.filter((i) => i.profileId === pid);
       if (opts.deliveryNotes)  data.deliveryNotes  = deliveryNotes.filter((d) => d.profileId === pid);
       if (opts.letters)        data.letters        = letters.filter((l) => l.profileId === pid);
@@ -615,27 +639,41 @@ export const useStore = create<AppState>()((set, get) => {
         const now = new Date().toISOString();
         const imported: Record<string, number> = {};
 
+        // Build customer ID map: old ID → new ID so documents stay linked
+        const customerIdMap = new Map<string, string>();
+        const newCustomers: Customer[]         = [];
         const newInvoices: Invoice[]           = [];
         const newDeliveryNotes: DeliveryNote[] = [];
         const newLetters: Letter[]             = [];
         const newTemplates: Template[]         = [];
         const newArticles: Article[]           = [];
 
+        if (Array.isArray(d.customers)) {
+          for (const cust of d.customers) {
+            const newId = generateId();
+            customerIdMap.set(cust.id, newId);
+            newCustomers.push({ ...cust, id: newId, profileId: pid, createdAt: now });
+          }
+          imported.customers = newCustomers.length;
+        }
         if (Array.isArray(d.invoices)) {
           for (const inv of d.invoices) {
-            newInvoices.push({ ...inv, id: generateId(), profileId: pid, customerId: '', createdAt: now, updatedAt: now });
+            const newCustId = customerIdMap.get(inv.customerId) ?? inv.customerId ?? '';
+            newInvoices.push({ ...inv, id: generateId(), profileId: pid, customerId: newCustId, createdAt: now, updatedAt: now });
           }
           imported.invoices = newInvoices.length;
         }
         if (Array.isArray(d.deliveryNotes)) {
           for (const dn of d.deliveryNotes) {
-            newDeliveryNotes.push({ ...dn, id: generateId(), profileId: pid, customerId: '', createdAt: now, updatedAt: now });
+            const newCustId = customerIdMap.get(dn.customerId) ?? dn.customerId ?? '';
+            newDeliveryNotes.push({ ...dn, id: generateId(), profileId: pid, customerId: newCustId, createdAt: now, updatedAt: now });
           }
           imported.deliveryNotes = newDeliveryNotes.length;
         }
         if (Array.isArray(d.letters)) {
           for (const lt of d.letters) {
-            newLetters.push({ ...lt, id: generateId(), profileId: pid, customerId: null, createdAt: now, updatedAt: now });
+            const newCustId = lt.customerId ? (customerIdMap.get(lt.customerId) ?? lt.customerId) : null;
+            newLetters.push({ ...lt, id: generateId(), profileId: pid, customerId: newCustId, createdAt: now, updatedAt: now });
           }
           imported.letters = newLetters.length;
         }
@@ -653,6 +691,7 @@ export const useStore = create<AppState>()((set, get) => {
         }
 
         set((s) => ({
+          customers:     [...s.customers,     ...newCustomers],
           invoices:      [...s.invoices,      ...newInvoices],
           deliveryNotes: [...s.deliveryNotes, ...newDeliveryNotes],
           letters:       [...s.letters,       ...newLetters],

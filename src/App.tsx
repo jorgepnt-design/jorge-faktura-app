@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useStore } from './store/useStore';
 import AppLayout from './components/layout/AppLayout';
 import Auth from './pages/Auth';
+import ProfileSelect from './pages/ProfileSelect';
 import Dashboard from './pages/Dashboard';
 import Customers from './pages/Customers';
 import Invoices from './pages/Invoices';
@@ -13,7 +14,7 @@ import Templates from './pages/Templates';
 import Settings from './pages/Settings';
 
 function AppRoutes() {
-  const { loggedInProfileId, restoreSession } = useStore();
+  const { supabaseUserId, loggedInProfileId, restoreSession } = useStore();
   const [sessionChecked, setSessionChecked] = useState(false);
 
   // On every page load: check if Supabase has a valid session and re-hydrate
@@ -30,8 +31,14 @@ function AppRoutes() {
     );
   }
 
-  if (!loggedInProfileId) {
+  // Not authenticated → login screen
+  if (!supabaseUserId) {
     return <Auth />;
+  }
+
+  // Authenticated but no profile chosen → profile picker
+  if (!loggedInProfileId) {
+    return <ProfileSelect />;
   }
 
   return (

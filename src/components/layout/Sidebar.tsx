@@ -23,7 +23,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const { logout, getLoggedInProfile } = useStore();
+  const { logout, getLoggedInProfile, profiles, switchProfile, loggedInProfileId } = useStore();
   const profile = getLoggedInProfile();
 
   return (
@@ -58,7 +58,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* Aktives Profil */}
         <div className="p-4 border-b border-slate-100">
-          <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Angemeldet als</p>
+          <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Aktives Profil</p>
           <div className="flex items-center gap-3 p-2 rounded-xl bg-brand-50">
             {profile?.logo ? (
               <img src={profile.logo} alt="" className="w-9 h-9 rounded-lg object-cover" />
@@ -67,13 +67,30 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 {(profile?.internalName || 'P').charAt(0).toUpperCase()}
               </div>
             )}
-            <div>
-              <p className="font-semibold text-slate-800 text-sm">{profile?.internalName || '-'}</p>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-slate-800 text-sm truncate">{profile?.internalName || '-'}</p>
               {profile?.companyName && (
-                <p className="text-xs text-slate-500">{profile.companyName}</p>
+                <p className="text-xs text-slate-500 truncate">{profile.companyName}</p>
               )}
             </div>
           </div>
+          {/* Profile switcher (only shown when multiple profiles exist) */}
+          {profiles.length > 1 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {profiles.filter((p) => p.id !== loggedInProfileId).map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => { switchProfile(p.id); onClose(); }}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs text-brand-600 bg-brand-50 hover:bg-brand-100 border border-brand-100 transition-colors"
+                >
+                  <span className="w-4 h-4 rounded bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white font-bold" style={{ fontSize: 8 }}>
+                    {(p.internalName || '?').charAt(0).toUpperCase()}
+                  </span>
+                  {p.internalName}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Navigation */}

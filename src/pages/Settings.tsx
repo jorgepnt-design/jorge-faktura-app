@@ -56,7 +56,10 @@ export default function Settings() {
 // ─── Profil Tab – eigenes Profil bearbeiten + PIN ändern ──────────────────────
 
 function ProfileTab() {
-  const { loggedInProfileId, logout, changePassword } = useStore();
+  const { loggedInProfileId, profiles, switchProfile, createProfile, deleteProfile, logout, changePassword } = useStore();
+  const [showNewProfile, setShowNewProfile] = useState(false);
+  const [newProfileName, setNewProfileName] = useState('');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const navigate = useNavigate();
   const [showPinForm, setShowPinForm] = useState(false);
   const [pin, setPin]           = useState('');
@@ -83,8 +86,82 @@ function ProfileTab() {
     navigate('/');
   };
 
+  const handleCreateProfile = () => {
+    if (!newProfileName.trim()) return;
+    createProfile(newProfileName.trim());
+    setNewProfileName('');
+    setShowNewProfile(false);
+  };
+
   return (
     <div className="space-y-4">
+
+      {/* Profilverwaltung */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-slate-800">Meine Profile</h2>
+          <Button size="sm" variant="outline" icon={<Plus className="w-3 h-3" />} onClick={() => setShowNewProfile(!showNewProfile)}>
+            Neues Profil
+          </Button>
+        </div>
+
+        {showNewProfile && (
+          <div className="flex gap-2 mb-4">
+            <input
+              autoFocus
+              type="text"
+              value={newProfileName}
+              onChange={(e) => setNewProfileName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleCreateProfile(); if (e.key === 'Escape') setShowNewProfile(false); }}
+              placeholder="Profilname (z.B. Privat, Firma 2…)"
+              className="flex-1 h-10 px-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            />
+            <Button size="sm" onClick={handleCreateProfile} disabled={!newProfileName.trim()}>Erstellen</Button>
+          </div>
+        )}
+
+        <div className="space-y-2">
+          {profiles.map((p) => {
+            const isActive = p.id === loggedInProfileId;
+            return (
+              <div key={p.id} className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-colors ${isActive ? 'border-brand-200 bg-brand-50' : 'border-slate-100 bg-slate-50'}`}>
+                {p.logo ? (
+                  <img src={p.logo} alt="" className="w-9 h-9 rounded-lg object-contain flex-shrink-0 bg-white" />
+                ) : (
+                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                    {(p.internalName || '?').charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-slate-900 text-sm truncate">{p.internalName}</p>
+                    {isActive && <span className="text-xs bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full font-medium">Aktiv</span>}
+                  </div>
+                  {p.companyName && <p className="text-xs text-slate-500 truncate">{p.companyName}</p>}
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {!isActive && (
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => switchProfile(p.id)}>Wechseln</Button>
+                      {deleteConfirmId === p.id ? (
+                        <>
+                          <Button size="sm" variant="ghost" onClick={() => setDeleteConfirmId(null)}>Abbrechen</Button>
+                          <button onClick={() => { deleteProfile(p.id); setDeleteConfirmId(null); }} className="px-2 py-1 text-xs rounded-lg bg-red-500 text-white hover:bg-red-600">Löschen</button>
+                        </>
+                      ) : (
+                        <button onClick={() => setDeleteConfirmId(p.id)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Profil bearbeiten */}
       {loggedInProfileId && <ProfileEditCard profileId={loggedInProfileId} />}
 
@@ -419,7 +496,7 @@ function DatenrettungTab() {
   const [importMsg, setImportMsg] = useState('');
   const [shareMsg, setShareMsg] = useState('');
   const [shareOpts, setShareOpts] = useState({
-    invoices: true, deliveryNotes: true, letters: true, templates: true, articles: true,
+    customers: true, invoices: true, deliveryNotes: true, letters: true, templates: true, articles: true,
   });
 
   const handleExport = () => {
@@ -465,6 +542,7 @@ function DatenrettungTab() {
       const result = importSharedData(ev.target?.result as string);
       if (result.success) {
         const parts: string[] = [];
+        if (result.imported.customers)      parts.push(`${result.imported.customers} Kunden`);
         if (result.imported.invoices)       parts.push(`${result.imported.invoices} Rechnungen`);
         if (result.imported.deliveryNotes)  parts.push(`${result.imported.deliveryNotes} Lieferscheine`);
         if (result.imported.letters)        parts.push(`${result.imported.letters} Schreiben`);
@@ -481,6 +559,7 @@ function DatenrettungTab() {
   };
 
   const shareLabels: { key: keyof typeof shareOpts; label: string }[] = [
+    { key: 'customers',      label: 'Kunden' },
     { key: 'invoices',       label: 'Rechnungen' },
     { key: 'deliveryNotes',  label: 'Lieferscheine' },
     { key: 'letters',        label: 'Schreiben' },
