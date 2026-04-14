@@ -310,7 +310,7 @@ function drawSignature(doc: jsPDF, profile: Profile, y: number): number {
 }
 
 // ── Modern footer: navy bar ───────────────────────────────────────────────────
-function drawModernFooter(doc: jsPDF, profile: Profile, showContact = true): void {
+function drawModernFooter(doc: jsPDF, profile: Profile): void {
   const footerY = PAGE_H - 18;
 
   // Gold accent line above footer
@@ -340,14 +340,6 @@ function drawModernFooter(doc: jsPDF, profile: Profile, showContact = true): voi
     doc.text(lines, PAGE_W / 2, footerY + 6, { align: 'center' });
   }
 
-  // Email + phone (right)
-  const contact = [profile.email, profile.phone || profile.mobile].filter(Boolean).join('  ·  ');
-  if (showContact && contact) {
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
-    txt(doc, GOLD_BG);
-    doc.text(contact, PAGE_W - MR, footerY + 12, { align: 'right' });
-  }
 }
 
 // ── Invoice builder ───────────────────────────────────────────────────────────
@@ -630,7 +622,7 @@ function buildLetterDoc(
     drawSignature(doc, profile, y - 13);
   }
 
-  drawModernFooter(doc, profile, false);
+  drawModernFooter(doc, profile);
   return doc;
 }
 
