@@ -411,7 +411,10 @@ function drawModernFooter(doc: jsPDF, profile: Profile): void {
   doc.rect(0, footerY, PAGE_W, 18, 'F');
 
   const parts: string[] = [];
-  if (profile.iban)      parts.push(`IBAN: ${profile.iban}`);
+  if (profile.iban) {
+    const ibanEntry = `IBAN: ${profile.iban}`;
+    parts.push(profile.accountHolder ? `${ibanEntry}  (${profile.accountHolder})` : ibanEntry);
+  }
   if (profile.bic)       parts.push(`BIC: ${profile.bic}`);
   if (profile.bankName)  parts.push(profile.bankName);
   if (profile.vatId)     parts.push(`USt-IdNr.: ${profile.vatId}`);

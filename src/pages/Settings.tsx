@@ -270,6 +270,9 @@ function ProfileEditCard({ profileId }: { profileId: string }) {
         <FormField label="IBAN">
           <Input value={form.iban} onChange={f('iban')} placeholder="DE00 1234 5678 9012 3456 78" />
         </FormField>
+        <FormField label="Kontoinhaber">
+          <Input value={form.accountHolder} onChange={f('accountHolder')} placeholder="Max Mustermann" />
+        </FormField>
         <FormField label="BIC">
           <Input value={form.bic} onChange={f('bic')} placeholder="DEUTDEDB" />
         </FormField>

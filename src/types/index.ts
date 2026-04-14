@@ -15,6 +15,7 @@ export interface Profile {
   taxNumber: string;
   vatId: string;
   bankName: string;
+  accountHolder: string;
   iban: string;
   bic: string;
   paymentTerms: string;

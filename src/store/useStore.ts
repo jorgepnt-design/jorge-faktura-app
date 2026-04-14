@@ -648,7 +648,7 @@ function makeBlankProfile(id: string, internalName: string): Profile {
     companyName: '', personName: '', address: '', zipCode: '',
     city: '', country: 'Deutschland', email: '', phone: '',
     mobile: '', website: '', taxNumber: '', vatId: '',
-    bankName: '', iban: '', bic: '',
+    bankName: '', accountHolder: '', iban: '', bic: '',
     paymentTerms: 'Zahlbar innerhalb von 14 Tagen ohne Abzug.',
     logo: null, logoNaturalWidth: 0, logoNaturalHeight: 0, signature: null,
     signatureOnInvoice: false, signatureOnDeliveryNote: false, signatureOnLetter: false, logoOnPdf: true,
