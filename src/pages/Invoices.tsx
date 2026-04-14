@@ -54,6 +54,7 @@ function emptyItem(): InvoiceItem {
   return {
     id: generateId(),
     articleId: null,
+    articleNumber: '',
     description: '',
     quantity: 1,
     unit: 'Stk.',
@@ -188,6 +189,7 @@ export default function Invoices() {
     if (!article) return;
     updateItem(idx, {
       articleId,
+      articleNumber: article.articleNumber || '',
       description: article.name + (article.description ? '\n' + article.description : ''),
       unit: article.unit,
       netUnitPrice: article.netPrice,

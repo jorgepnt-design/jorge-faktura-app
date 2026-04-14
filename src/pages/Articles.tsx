@@ -13,6 +13,7 @@ const UNITS = ['Stk.', 'Std.', 'Tage', 'km', 'Pauschal', 'm²', 'Liter', 'kg', '
 
 interface ArticleFormData {
   profileId: string | null;
+  articleNumber: string;
   name: string;
   description: string;
   unit: string;
@@ -21,7 +22,7 @@ interface ArticleFormData {
 }
 
 function emptyForm(profileId: string | null): ArticleFormData {
-  return { profileId, name: '', description: '', unit: 'Stk.', netPrice: 0, vatRate: 19 };
+  return { profileId, articleNumber: '', name: '', description: '', unit: 'Stk.', netPrice: 0, vatRate: 19 };
 }
 
 export default function Articles() {
@@ -52,6 +53,7 @@ export default function Articles() {
       setEditingId(article.id);
       setForm({
         profileId: article.profileId,
+        articleNumber: article.articleNumber || '',
         name: article.name,
         description: article.description,
         unit: article.unit,
@@ -145,14 +147,23 @@ export default function Articles() {
         }
       >
         <div className="space-y-4">
-          <FormField label="Artikelname" required>
-            <Input
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="z.B. Holzpalette, Versandkarton..."
-              autoFocus
-            />
-          </FormField>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField label="Artikelname" required>
+              <Input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="z.B. Holzpalette, Versandkarton..."
+                autoFocus
+              />
+            </FormField>
+            <FormField label="Artikelnummer">
+              <Input
+                value={form.articleNumber}
+                onChange={(e) => setForm({ ...form, articleNumber: e.target.value })}
+                placeholder="z.B. ART-001"
+              />
+            </FormField>
+          </div>
 
           <FormField label="Beschreibung">
             <Textarea
@@ -246,7 +257,14 @@ function ArticleCard({ article, grossPrice, onEdit, onDelete }: ArticleCardProps
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="font-semibold text-slate-900 truncate">{article.name}</p>
+              <div className="flex items-center gap-2">
+                <p className="font-semibold text-slate-900 truncate">{article.name}</p>
+                {article.articleNumber && (
+                  <span className="text-xs bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full font-medium flex-shrink-0">
+                    {article.articleNumber}
+                  </span>
+                )}
+              </div>
               {article.description && (
                 <p className="text-xs text-slate-400 truncate mt-0.5">{article.description}</p>
               )}

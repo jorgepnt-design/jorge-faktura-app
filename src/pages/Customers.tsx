@@ -11,6 +11,7 @@ import { Customer } from '../types';
 
 interface CustomerFormData {
   profileId: string;
+  customerNumber: string;
   companyName: string;
   contactPerson: string;
   address: string;
@@ -25,6 +26,7 @@ interface CustomerFormData {
 
 const emptyForm: CustomerFormData = {
   profileId: '',
+  customerNumber: '',
   companyName: '',
   contactPerson: '',
   address: '',
@@ -67,6 +69,7 @@ export default function Customers() {
       setEditingId(customer.id);
       setForm({
         profileId: customer.profileId,
+        customerNumber: customer.customerNumber || '',
         companyName: customer.companyName,
         contactPerson: customer.contactPerson,
         address: customer.address,
@@ -204,6 +207,14 @@ export default function Customers() {
                 onChange={(e) => setForm({ ...form, companyName: e.target.value })}
                 placeholder="Muster GmbH"
                 error={!!errors.companyName}
+              />
+            </FormField>
+
+            <FormField label="Kundennummer">
+              <Input
+                value={form.customerNumber}
+                onChange={(e) => setForm({ ...form, customerNumber: e.target.value })}
+                placeholder="z.B. KD-001"
               />
             </FormField>
 

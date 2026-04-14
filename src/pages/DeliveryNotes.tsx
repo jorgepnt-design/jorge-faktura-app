@@ -52,6 +52,7 @@ function emptyItem(): DeliveryNoteItem {
   return {
     id: generateId(),
     articleId: null,
+    articleNumber: '',
     description: '',
     quantity: 1,
     unit: 'Stk.',
@@ -166,6 +167,7 @@ export default function DeliveryNotes() {
     const calc = calculateLineItem(form.items[idx]?.quantity ?? 1, article.netPrice, article.vatRate);
     updateItem(idx, {
       articleId,
+      articleNumber: article.articleNumber || '',
       description: article.name,
       unit: article.unit,
       netUnitPrice: article.netPrice,

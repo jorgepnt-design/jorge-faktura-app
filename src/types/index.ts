@@ -51,6 +51,7 @@ export interface Customer {
 export interface Article {
   id: string;
   profileId: string | null;
+  articleNumber: string;
   name: string;
   description: string;
   unit: string;
@@ -80,6 +81,7 @@ export interface Template {
 export interface InvoiceItem {
   id: string;
   articleId: string | null;
+  articleNumber: string;
   description: string;
   quantity: number;
   unit: string;
@@ -116,6 +118,7 @@ export interface Invoice {
 export interface DeliveryNoteItem {
   id: string;
   articleId: string | null;
+  articleNumber: string;
   description: string;
   quantity: number;
   unit: string;

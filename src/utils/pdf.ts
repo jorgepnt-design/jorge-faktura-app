@@ -391,7 +391,7 @@ function buildInvoiceDoc(
   // Items table
   const tableBody = invoice.items.map((item, idx) => [
     String(idx + 1),
-    item.description,
+    (item.articleNumber ? `[${item.articleNumber}] ` : '') + item.description,
     formatCurrency(item.netUnitPrice),
     `${item.vatRate} %`,
     formatCurrency(item.netTotal),
@@ -467,7 +467,14 @@ function buildDeliveryNoteDoc(
     profile.address || '',
     [profile.zipCode, profile.city].filter(Boolean).join(' '),
   ].filter(Boolean);
-  const toLines = customer ? customerAddressLines(customer) : [];
+  const toLines = customer ? [
+    customer.customerNumber ? `Kd-Nr.: ${customer.customerNumber}` : '',
+    customer.companyName,
+    customer.contactPerson || '',
+    customer.address || '',
+    [customer.zipCode, customer.city].filter(Boolean).join(' '),
+    customer.country && customer.country !== 'Deutschland' ? customer.country : '',
+  ].filter(Boolean) : [];
   if (toLines.length > 0) {
     y = drawFromTo(doc, 'VON', fromLines, 'AN', toLines, y + 2);
   } else {
@@ -490,7 +497,7 @@ function buildDeliveryNoteDoc(
   if (hasPrices) {
     const tableBody = note.items.map((item, idx) => [
       String(idx + 1),
-      item.description + (item.notes ? `\n${item.notes}` : ''),
+      (item.articleNumber ? `[${item.articleNumber}] ` : '') + item.description + (item.notes ? `\n${item.notes}` : ''),
       item.quantity.toString(),
       item.unit,
       formatCurrency(item.netUnitPrice ?? 0),
@@ -531,7 +538,7 @@ function buildDeliveryNoteDoc(
   } else {
     const tableBody = note.items.map((item, idx) => [
       String(idx + 1),
-      item.description,
+      (item.articleNumber ? `[${item.articleNumber}] ` : '') + item.description,
       item.quantity.toString(),
       item.unit,
       item.notes || '',
