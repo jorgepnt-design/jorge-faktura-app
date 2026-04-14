@@ -561,23 +561,8 @@ function buildDeliveryNoteDoc(
     y = drawTextBlock(doc, 'Bemerkung', note.noteText, y);
   }
 
-  // Delivery confirmation area
-  y += 6;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
-  txt(doc, SLATE_500);
-  doc.text('Warenempfang bestätigt:', ML, y);
-
-  draw(doc, SLATE_300);
-  doc.setLineWidth(0.4);
-  doc.line(ML, y + 16, ML + 72, y + 16);
-
-  doc.setFontSize(7.5);
-  txt(doc, SLATE_300);
-  doc.text('Unterschrift / Datum', ML, y + 21);
-
   if (profile.signatureOnDeliveryNote && profile.signature) {
-    drawSignature(doc, profile, y + 13);
+    drawSignature(doc, profile, y + 6);
   }
 
   drawModernFooter(doc, profile);
