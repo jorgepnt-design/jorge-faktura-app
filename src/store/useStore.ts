@@ -614,12 +614,25 @@ export const useStore = create<AppState>()((set, get) => {
     // ── Export / Import ───────────────────────────────────────────────────────
 
     exportSharedData: (opts) => {
-      const { loggedInProfileId, invoices, deliveryNotes, letters, templates, articles, customers } = get();
+      const { loggedInProfileId, profiles, invoices, deliveryNotes, letters, templates, articles, customers } = get();
       const pid = loggedInProfileId;
+      const profile = profiles.find((p) => p.id === pid);
+      const sender = profile ? {
+        internalName: profile.internalName,
+        companyName: profile.companyName, personName: profile.personName,
+        address: profile.address, zipCode: profile.zipCode, city: profile.city,
+        country: profile.country, email: profile.email, phone: profile.phone,
+        mobile: profile.mobile, website: profile.website, taxNumber: profile.taxNumber,
+        vatId: profile.vatId, bankName: profile.bankName, accountHolder: profile.accountHolder,
+        iban: profile.iban, bic: profile.bic, paymentTerms: profile.paymentTerms,
+        logo: profile.logo, logoNaturalWidth: profile.logoNaturalWidth,
+        logoNaturalHeight: profile.logoNaturalHeight, pdfFooter: profile.pdfFooter,
+      } : undefined;
       const data: Record<string, unknown> = {
         __type: 'jorge-faktura-share',
         version: 1,
         exportedAt: new Date().toISOString(),
+        sender,
       };
       if (opts.customers)      data.customers      = customers.filter((c) => c.profileId === pid);
       if (opts.invoices)       data.invoices       = invoices.filter((i) => i.profileId === pid);
@@ -634,7 +647,7 @@ export const useStore = create<AppState>()((set, get) => {
       try {
         const d = JSON.parse(json);
         if (d.__type !== 'jorge-faktura-share') return { success: false, error: 'Keine gültige Freigabe-Datei.', imported: {} };
-        const { loggedInProfileId } = get();
+        const { loggedInProfileId, profiles } = get();
         const pid = loggedInProfileId || '';
         const now = new Date().toISOString();
         const imported: Record<string, number> = {};
@@ -690,6 +703,37 @@ export const useStore = create<AppState>()((set, get) => {
           imported.articles = newArticles.length;
         }
 
+        // Apply sender profile fields to current profile when it has no company name yet
+        let profileUpdate: Partial<Profile> | undefined;
+        if (d.sender && pid) {
+          const currentProfile = profiles.find((p) => p.id === pid);
+          if (currentProfile && !currentProfile.companyName) {
+            profileUpdate = {
+              companyName: d.sender.companyName || '',
+              personName:  d.sender.personName  || '',
+              address:     d.sender.address     || '',
+              zipCode:     d.sender.zipCode     || '',
+              city:        d.sender.city        || '',
+              country:     d.sender.country     || '',
+              email:       d.sender.email       || '',
+              phone:       d.sender.phone       || '',
+              mobile:      d.sender.mobile      || '',
+              website:     d.sender.website     || '',
+              taxNumber:   d.sender.taxNumber   || '',
+              vatId:       d.sender.vatId       || '',
+              bankName:    d.sender.bankName    || '',
+              accountHolder: d.sender.accountHolder || '',
+              iban:        d.sender.iban        || '',
+              bic:         d.sender.bic         || '',
+              paymentTerms: d.sender.paymentTerms || '',
+              logo:        d.sender.logo        ?? null,
+              logoNaturalWidth:  d.sender.logoNaturalWidth  ?? 0,
+              logoNaturalHeight: d.sender.logoNaturalHeight ?? 0,
+              pdfFooter:   d.sender.pdfFooter   || '',
+            };
+          }
+        }
+
         set((s) => ({
           customers:     [...s.customers,     ...newCustomers],
           invoices:      [...s.invoices,      ...newInvoices],
@@ -697,6 +741,9 @@ export const useStore = create<AppState>()((set, get) => {
           letters:       [...s.letters,       ...newLetters],
           templates:     [...s.templates,     ...newTemplates],
           articles:      [...s.articles,      ...newArticles],
+          ...(profileUpdate && pid ? {
+            profiles: s.profiles.map((p) => p.id === pid ? { ...p, ...profileUpdate } : p),
+          } : {}),
         }));
         scheduleSync();
         return { success: true, imported };
@@ -717,8 +764,19 @@ export const useStore = create<AppState>()((set, get) => {
     importData: (json) => {
       try {
         const d = JSON.parse(json);
+        const restoredProfiles: Profile[] = d.profiles || [];
+        const { supabaseUserId } = get();
+        let profileId: string | null = null;
+        if (restoredProfiles.length === 1) {
+          profileId = restoredProfiles[0].id;
+        } else if (restoredProfiles.length > 1 && supabaseUserId) {
+          const saved = localStorage.getItem(`lastProfile_${supabaseUserId}`);
+          const valid = restoredProfiles.find((p) => p.id === saved);
+          profileId = valid ? saved : null;
+        }
         set({
-          profiles:      d.profiles      || [],
+          loggedInProfileId: profileId,
+          profiles:      restoredProfiles,
           customers:     d.customers     || [],
           articles:      d.articles      || [],
           templates:     d.templates     || [],
