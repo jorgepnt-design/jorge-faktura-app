@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, PenLine, MoreVertical, Edit2, Trash2, Download, Share2, Mail, MessageCircle, Copy } from 'lucide-react';
+import { Plus, Search, PenLine, MoreVertical, Edit2, Trash2, Download, Share2, Mail, MessageCircle, Copy, Eye } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
@@ -8,6 +8,7 @@ import EmptyState from '../components/common/EmptyState';
 import { FormField, Input, Textarea, Select } from '../components/common/FormField';
 import TemplateTextSelector from '../components/templates/TemplateTextSelector';
 import ShareModal from '../components/common/ShareModal';
+import PDFPreviewModal from '../components/common/PDFPreviewModal';
 import { Letter } from '../types';
 import { formatDate, formatCurrency, todayISO } from '../utils/helpers';
 import { generateLetterPDF, getLetterPdfBlob } from '../utils/pdf';
@@ -42,6 +43,8 @@ export default function Letters() {
   const [shareSubject, setShareSubject] = useState('');
   const [shareBody, setShareBody] = useState('');
   const [shareEmail, setShareEmail] = useState('');
+  const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
+  const [previewTitle, setPreviewTitle] = useState('');
 
   const profileCustomers = useMemo(
     () => customers.filter((c) => c.profileId === form.profileId),
@@ -93,6 +96,16 @@ export default function Letters() {
     if (!profile) return;
     const customer = letter.customerId ? customers.find((c) => c.id === letter.customerId) ?? null : null;
     generateLetterPDF(letter, profile, customer);
+  };
+
+  const handlePreview = (letter: Letter) => {
+    const profile = profiles.find((p) => p.id === letter.profileId);
+    if (!profile) return;
+    const customer = letter.customerId ? customers.find((c) => c.id === letter.customerId) ?? null : null;
+    const blob = getLetterPdfBlob(letter, profile, customer);
+    if (previewBlobUrl) URL.revokeObjectURL(previewBlobUrl);
+    setPreviewBlobUrl(URL.createObjectURL(blob));
+    setPreviewTitle(letter.title || 'Schreiben');
   };
 
   const handleShare = (letter: Letter) => {
@@ -157,6 +170,7 @@ export default function Letters() {
               onDuplicate={() => duplicateLetter(letter.id)}
               onPDF={() => handlePDF(letter)}
               onShare={() => handleShare(letter)}
+              onPreview={() => handlePreview(letter)}
             />
           ))}
         </div>
@@ -263,6 +277,14 @@ export default function Letters() {
         message="Möchten Sie dieses Schreiben wirklich löschen?"
       />
 
+      {/* PDF preview */}
+      <PDFPreviewModal
+        blobUrl={previewBlobUrl}
+        title={previewTitle}
+        onClose={() => { if (previewBlobUrl) URL.revokeObjectURL(previewBlobUrl); setPreviewBlobUrl(null); }}
+        onDownload={() => { if (previewBlobUrl) { const a = document.createElement('a'); a.href = previewBlobUrl; a.download = `${previewTitle}.pdf`; a.click(); } }}
+      />
+
       {/* Share modal */}
       <ShareModal
         isOpen={!!shareBlobUrl}
@@ -287,9 +309,10 @@ interface LetterCardProps {
   onDuplicate: () => void;
   onPDF: () => void;
   onShare: () => void;
+  onPreview: () => void;
 }
 
-function LetterCard({ letter, profileName, customerName, onEdit, onDelete, onDuplicate, onPDF, onShare }: LetterCardProps) {
+function LetterCard({ letter, profileName, customerName, onEdit, onDelete, onDuplicate, onPDF, onShare, onPreview }: LetterCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -322,6 +345,9 @@ function LetterCard({ letter, profileName, customerName, onEdit, onDelete, onDup
                     </button>
                     <button onClick={() => { onDuplicate(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
                       <Copy className="w-4 h-4" /> Duplizieren
+                    </button>
+                    <button onClick={() => { onPreview(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-brand-600 hover:bg-brand-50">
+                      <Eye className="w-4 h-4" /> Vorschau
                     </button>
                     <button onClick={() => { onPDF(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
                       <Download className="w-4 h-4" /> PDF exportieren

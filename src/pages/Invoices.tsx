@@ -11,6 +11,7 @@ import Modal from '../components/common/Modal';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import EmptyState from '../components/common/EmptyState';
 import ShareModal from '../components/common/ShareModal';
+import PDFPreviewModal from '../components/common/PDFPreviewModal';
 import { FormField, Input, Textarea, Select } from '../components/common/FormField';
 import TemplateTextSelector from '../components/templates/TemplateTextSelector';
 import { Invoice, InvoiceItem, InvoiceStatus, Receipt, PaymentMethod } from '../types';
@@ -97,6 +98,10 @@ export default function Invoices() {
   const [shareSubject, setShareSubject] = useState('');
   const [shareBody, setShareBody] = useState('');
   const [shareEmail, setShareEmail] = useState('');
+
+  // Preview state
+  const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
+  const [previewTitle, setPreviewTitle] = useState('');
 
   // Receipt form state
   const [showReceiptForm, setShowReceiptForm] = useState(false);
@@ -214,6 +219,16 @@ export default function Invoices() {
     if (profile) generateInvoicePDF(invoice, profile, customer);
   };
 
+  const handlePreview = (invoice: Invoice) => {
+    const profile = profiles.find((p) => p.id === invoice.profileId);
+    const customer = customers.find((c) => c.id === invoice.customerId) || null;
+    if (!profile) return;
+    const blob = getInvoicePdfBlob(invoice, profile, customer);
+    if (previewBlobUrl) URL.revokeObjectURL(previewBlobUrl);
+    setPreviewBlobUrl(URL.createObjectURL(blob));
+    setPreviewTitle(`Rechnung ${invoice.invoiceNumber}`);
+  };
+
   const handleShare = (invoice: Invoice) => {
     const profile = profiles.find((p) => p.id === invoice.profileId);
     const customer = customers.find((c) => c.id === invoice.customerId) || null;
@@ -270,6 +285,15 @@ export default function Invoices() {
   const handleReceiptPDF = (r: Receipt) => {
     const profile = profiles.find((p) => p.id === r.profileId);
     if (profile) generateReceiptPDF(r, profile);
+  };
+
+  const handleReceiptPreview = (r: Receipt) => {
+    const profile = profiles.find((p) => p.id === r.profileId);
+    if (!profile) return;
+    const blob = getReceiptPdfBlob(r, profile);
+    if (previewBlobUrl) URL.revokeObjectURL(previewBlobUrl);
+    setPreviewBlobUrl(URL.createObjectURL(blob));
+    setPreviewTitle(`Quittung ${r.receiptNumber}`);
   };
 
   const handleReceiptShare = (r: Receipt) => {
@@ -370,6 +394,7 @@ export default function Invoices() {
                   onDuplicate={() => duplicateInvoice(inv.id)}
                   onPDF={() => handlePDF(inv)}
                   onShare={() => handleShare(inv)}
+                  onPreview={() => handlePreview(inv)}
                   onCreateReceipt={() => handleCreateReceipt(inv)}
                   onMarkPaid={() => updateInvoice(inv.id, { status: 'paid' })}
                   onMarkOpen={() => updateInvoice(inv.id, { status: 'open' })}
@@ -420,6 +445,9 @@ export default function Invoices() {
                     <div className="flex gap-2 mt-3 pt-3 border-t border-slate-50">
                       <button onClick={() => handleEditReceipt(r)} className="flex items-center gap-1.5 text-xs text-brand-500 hover:text-brand-700">
                         <Edit2 className="w-3.5 h-3.5" /> Bearbeiten
+                      </button>
+                      <button onClick={() => handleReceiptPreview(r)} className="flex items-center gap-1.5 text-xs text-brand-500 hover:text-brand-700">
+                        <Eye className="w-3.5 h-3.5" /> Vorschau
                       </button>
                       <button onClick={() => handleReceiptPDF(r)} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700">
                         <Download className="w-3.5 h-3.5" /> PDF
@@ -718,6 +746,14 @@ export default function Invoices() {
         message="Möchten Sie diese Quittung wirklich löschen?"
       />
 
+      {/* PDF preview */}
+      <PDFPreviewModal
+        blobUrl={previewBlobUrl}
+        title={previewTitle}
+        onClose={() => { if (previewBlobUrl) URL.revokeObjectURL(previewBlobUrl); setPreviewBlobUrl(null); }}
+        onDownload={() => { if (previewBlobUrl) { const a = document.createElement('a'); a.href = previewBlobUrl; a.download = `${previewTitle}.pdf`; a.click(); } }}
+      />
+
       {/* Share modal */}
       <ShareModal
         isOpen={!!shareBlobUrl}
@@ -787,6 +823,7 @@ interface InvoiceCardProps {
   onDuplicate: () => void;
   onPDF: () => void;
   onShare: () => void;
+  onPreview: () => void;
   onCreateReceipt: () => void;
   onMarkPaid: () => void;
   onMarkOpen: () => void;
@@ -794,7 +831,7 @@ interface InvoiceCardProps {
 
 function InvoiceCard({
   invoice, customerName, profileName,
-  onEdit, onDelete, onDuplicate, onPDF, onShare, onCreateReceipt, onMarkPaid, onMarkOpen,
+  onEdit, onDelete, onDuplicate, onPDF, onShare, onPreview, onCreateReceipt, onMarkPaid, onMarkOpen,
 }: InvoiceCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -827,6 +864,9 @@ function InvoiceCard({
                     <div className="absolute right-0 top-9 z-20 bg-white rounded-xl shadow-lg border border-slate-100 py-1 w-44">
                       <button onClick={() => { onEdit(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
                         <Edit2 className="w-4 h-4" /> Bearbeiten
+                      </button>
+                      <button onClick={() => { onPreview(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-brand-600 hover:bg-brand-50">
+                        <Eye className="w-4 h-4" /> Vorschau
                       </button>
                       <button onClick={() => { onPDF(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
                         <Download className="w-4 h-4" /> PDF exportieren

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   Plus, Search, Truck, MoreVertical, Edit2, Trash2, Copy,
-  Download, Package, Trash, RefreshCw, Share2, Mail, MessageCircle,
+  Download, Package, Trash, RefreshCw, Share2, Mail, MessageCircle, Eye,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import Button from '../components/common/Button';
@@ -11,6 +11,7 @@ import EmptyState from '../components/common/EmptyState';
 import { FormField, Input, Textarea, Select } from '../components/common/FormField';
 import TemplateTextSelector from '../components/templates/TemplateTextSelector';
 import ShareModal from '../components/common/ShareModal';
+import PDFPreviewModal from '../components/common/PDFPreviewModal';
 import { DeliveryNote, DeliveryNoteItem, DeliveryNoteStatus } from '../types';
 import {
   formatCurrency, formatDate, getStatusColor, getStatusLabel,
@@ -86,6 +87,8 @@ export default function DeliveryNotes() {
   const [shareSubject, setShareSubject] = useState('');
   const [shareBody, setShareBody] = useState('');
   const [shareEmail, setShareEmail] = useState('');
+  const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
+  const [previewTitle, setPreviewTitle] = useState('');
 
   const profileCustomers = useMemo(
     () => customers.filter((c) => c.profileId === form.profileId),
@@ -207,6 +210,16 @@ export default function DeliveryNotes() {
     if (profile) generateDeliveryNotePDF(note, profile, customer);
   };
 
+  const handlePreview = (note: DeliveryNote) => {
+    const profile = profiles.find((p) => p.id === note.profileId);
+    const customer = customers.find((c) => c.id === note.customerId) || null;
+    if (!profile) return;
+    const blob = getDeliveryNotePdfBlob(note, profile, customer);
+    if (previewBlobUrl) URL.revokeObjectURL(previewBlobUrl);
+    setPreviewBlobUrl(URL.createObjectURL(blob));
+    setPreviewTitle(`Lieferschein ${note.deliveryNoteNumber}`);
+  };
+
   const customerName = (id: string) => customers.find((c) => c.id === id)?.companyName || '-';
   const profileName = (id: string) => profiles.find((p) => p.id === id)?.internalName || '-';
 
@@ -270,6 +283,7 @@ export default function DeliveryNotes() {
               onDuplicate={() => duplicateDeliveryNote(note.id)}
               onPDF={() => handlePDF(note)}
               onShare={() => handleShare(note)}
+              onPreview={() => handlePreview(note)}
             />
           ))}
         </div>
@@ -525,6 +539,14 @@ export default function DeliveryNotes() {
         message="Möchten Sie diesen Lieferschein wirklich löschen?"
       />
 
+      {/* PDF preview */}
+      <PDFPreviewModal
+        blobUrl={previewBlobUrl}
+        title={previewTitle}
+        onClose={() => { if (previewBlobUrl) URL.revokeObjectURL(previewBlobUrl); setPreviewBlobUrl(null); }}
+        onDownload={() => { if (previewBlobUrl) { const a = document.createElement('a'); a.href = previewBlobUrl; a.download = `${previewTitle}.pdf`; a.click(); } }}
+      />
+
       {/* Share modal */}
       <ShareModal
         isOpen={!!shareBlobUrl}
@@ -549,9 +571,10 @@ interface DNCardProps {
   onDuplicate: () => void;
   onPDF: () => void;
   onShare: () => void;
+  onPreview: () => void;
 }
 
-function DNCard({ note, customerName, profileName, onEdit, onDelete, onDuplicate, onPDF, onShare }: DNCardProps) {
+function DNCard({ note, customerName, profileName, onEdit, onDelete, onDuplicate, onPDF, onShare, onPreview }: DNCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -586,6 +609,9 @@ function DNCard({ note, customerName, profileName, onEdit, onDelete, onDuplicate
                       </button>
                       <button onClick={() => { onDuplicate(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
                         <Copy className="w-4 h-4" /> Duplizieren
+                      </button>
+                      <button onClick={() => { onPreview(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-brand-600 hover:bg-brand-50">
+                        <Eye className="w-4 h-4" /> Vorschau
                       </button>
                       <button onClick={() => { onPDF(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
                         <Download className="w-4 h-4" /> PDF exportieren
