@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Immobilien & Digitale Dienstleistungen – Freelancer</title>
+<meta name="description" content="Professionelle Exposés, Mietverträge, virtuelle Assistenz und KI-Apps – Ihr Experte für Immobilien und digitale Dienstleistungen."/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#1C1C1C;
+  --bg2:#242424;
+  --bg3:#2e2e2e;
+  --gold:#D4A843;
+  --gold-dark:#B8860B;
+  --gold-light:#e8c06a;
+  --text:#F0F0F0;
+  --text-muted:#A0A0A0;
+  --border:#333;
+  --radius:8px;
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+}
+html{scroll-behavior:smooth;font-size:16px}
+body{background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.6;overflow-x:hidden}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(28,28,28,.95);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);transition:box-shadow .3s}
+nav.scrolled{box-shadow:0 2px 20px rgba(0,0,0,.5)}
+.nav-inner{max-width:1200px;margin:0 auto;padding:0 1.5rem;height:64px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{font-size:1.2rem;font-weight:700;color:var(--gold);letter-spacing:.5px;text-decoration:none}
+.nav-links{display:flex;gap:2rem;list-style:none}
+.nav-links a{color:var(--text-muted);text-decoration:none;font-size:.9rem;font-weight:500;transition:color .2s;letter-spacing:.3px}
+.nav-links a:hover,.nav-links a.active{color:var(--gold)}
+.nav-cta{background:var(--gold);color:#1C1C1C;padding:.5rem 1.25rem;border-radius:var(--radius);font-weight:700;font-size:.85rem;text-decoration:none;transition:background .2s,transform .15s}
+.nav-cta:hover{background:var(--gold-light);transform:translateY(-1px)}
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px;background:none;border:none}
+.hamburger span{width:24px;height:2px;background:var(--text);border-radius:2px;transition:all .3s}
+.hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.hamburger.open span:nth-child(2){opacity:0}
+.hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+.mobile-menu{display:none;position:fixed;top:64px;left:0;right:0;background:rgba(28,28,28,.98);border-bottom:1px solid var(--border);padding:1.5rem;flex-direction:column;gap:1.25rem;z-index:999}
+.mobile-menu.open{display:flex}
+.mobile-menu a{color:var(--text-muted);text-decoration:none;font-size:1rem;font-weight:500;padding:.5rem 0;border-bottom:1px solid var(--border);transition:color .2s}
+.mobile-menu a:last-child{border-bottom:none}
+.mobile-menu a:hover{color:var(--gold)}
+.mobile-menu .nav-cta{border-bottom:none;text-align:center;padding:.75rem;margin-top:.5rem}
+
+/* ── HERO ── */
+#hero{min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:7rem 1.5rem 4rem;position:relative;overflow:hidden}
+#hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 40%,rgba(212,168,67,.08) 0%,transparent 70%);pointer-events:none}
+.hero-content{max-width:780px;position:relative;z-index:1}
+.hero-badge{display:inline-block;background:rgba(212,168,67,.12);color:var(--gold);border:1px solid rgba(212,168,67,.3);padding:.35rem 1rem;border-radius:50px;font-size:.8rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:1.75rem}
+.hero-title{font-size:clamp(2.2rem,5vw,3.8rem);font-weight:800;line-height:1.15;letter-spacing:-1px;margin-bottom:1.25rem}
+.hero-title span{color:var(--gold)}
+.hero-sub{font-size:clamp(1rem,2.5vw,1.25rem);color:var(--text-muted);margin-bottom:2.5rem;letter-spacing:.5px}
+.hero-sub strong{color:var(--gold);font-weight:600}
+.hero-btns{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-bottom:4rem}
+.btn-primary{background:var(--gold);color:#1C1C1C;padding:.85rem 2rem;border-radius:var(--radius);font-weight:700;font-size:1rem;text-decoration:none;transition:background .2s,transform .15s,box-shadow .2s}
+.btn-primary:hover{background:var(--gold-light);transform:translateY(-2px);box-shadow:0 8px 25px rgba(212,168,67,.3)}
+.btn-outline{background:transparent;color:var(--gold);border:2px solid var(--gold);padding:.85rem 2rem;border-radius:var(--radius);font-weight:700;font-size:1rem;text-decoration:none;transition:all .2s}
+.btn-outline:hover{background:rgba(212,168,67,.1);transform:translateY(-2px)}
+.hero-divider{width:120px;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:0 auto}
+
+/* ── FADE-IN ANIMATION ── */
+.fade-in{opacity:0;transform:translateY(30px);transition:opacity .7s ease,transform .7s ease}
+.fade-in.visible{opacity:1;transform:translateY(0)}
+
+/* ── SECTION BASE ── */
+section{padding:5rem 1.5rem}
+.container{max-width:1200px;margin:0 auto}
+.section-label{color:var(--gold);font-size:.78rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:.75rem}
+.section-title{font-size:clamp(1.8rem,3.5vw,2.8rem);font-weight:800;letter-spacing:-.5px;margin-bottom:1rem}
+.section-subtitle{color:var(--text-muted);font-size:1.05rem;max-width:560px;margin-bottom:3rem}
+
+@media(max-width:768px){
+  .nav-links,.nav-cta{display:none}
+  .hamburger{display:flex}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="navbar">
+  <div class="nav-inner">
+    <a href="#hero" class="nav-logo">Jorge Pinto</a>
+    <ul class="nav-links">
+      <li><a href="#ueber">Über mich</a></li>
+      <li><a href="#leistungen">Leistungen</a></li>
+      <li><a href="#preise">Preise</a></li>
+      <li><a href="#ablauf">Ablauf</a></li>
+      <li><a href="#kontakt">Kontakt</a></li>
+    </ul>
+    <a href="#kontakt" class="nav-cta">Anfragen</a>
+    <button class="hamburger" id="hamburger" aria-label="Menü">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#ueber" class="mobile-link">Über mich</a>
+  <a href="#leistungen" class="mobile-link">Leistungen</a>
+  <a href="#preise" class="mobile-link">Preise</a>
+  <a href="#ablauf" class="mobile-link">Ablauf</a>
+  <a href="#kontakt" class="mobile-link">Kontakt</a>
+  <a href="#kontakt" class="nav-cta mobile-link">Jetzt anfragen</a>
+</div>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-content fade-in">
+    <div class="hero-badge">Freelancer · Verfügbar</div>
+    <h1 class="hero-title">Ihr <span>Immobilien-Experte</span><br>&amp; digitaler Freelancer</h1>
+    <p class="hero-sub"><strong>Exposés</strong> · <strong>Mietverträge</strong> · <strong>Virtuelle Assistenz</strong> · <strong>KI-Apps</strong></p>
+    <div class="hero-btns">
+      <a href="#leistungen" class="btn-primary">Leistungen entdecken</a>
+      <a href="#kontakt" class="btn-outline">Jetzt anfragen</a>
+    </div>
+    <div class="hero-divider"></div>
+  </div>
+</section>
+
+
+<!-- ÜBER MICH -->
+<section id="ueber" style="background:var(--bg2)">
+  <div class="container">
+    <div class="fade-in">
+      <p class="section-label">Über mich</p>
+      <h2 class="section-title">Erfahrung trifft <span style="color:var(--gold)">digitale Innovation</span></h2>
+      <p class="section-subtitle">Mehrjährige Erfahrung in der Maklerbranche kombiniert mit moderner App-Entwicklung und KI-Tools – ich bringe beide Welten zusammen.</p>
+    </div>
+    <div class="about-cards">
+      <!-- Immobilien -->
+      <div class="about-card fade-in">
+        <div class="about-icon">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        </div>
+        <h3>Immobilien-Expertise</h3>
+        <p>Mehrjährige Berufserfahrung in der Maklerbranche. Professionelle Exposés, rechtssichere Verträge und fundiertes Markt-Know-how.</p>
+      </div>
+      <!-- Digital -->
+      <div class="about-card fade-in">
+        <div class="about-icon">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+            <circle cx="12" cy="10" r="3"/><path d="M9.5 7.5l-2-2M14.5 7.5l2-2M9.5 12.5l-2 2M14.5 12.5l2 2"/>
+          </svg>
+        </div>
+        <h3>Digitale Skills &amp; KI</h3>
+        <p>Entwicklung von Web-Apps, Automatisierungen mit Make.com &amp; n8n sowie KI-gestützte Tools, die echte Arbeit abnehmen.</p>
+      </div>
+      <!-- Remote -->
+      <div class="about-card fade-in">
+        <div class="about-icon">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/>
+          </svg>
+        </div>
+        <h3>100% Remote &amp; Flexibel</h3>
+        <p>Ortsunabhängiges Arbeiten, schnelle Reaktionszeiten und flexible Auftragsgrößen – von Einzeldokumenten bis Monatspaketen.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+.about-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem}
+.about-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:2rem;transition:border-color .3s,transform .3s,box-shadow .3s}
+.about-card:hover{border-color:var(--gold-dark);transform:translateY(-4px);box-shadow:0 12px 30px rgba(0,0,0,.3)}
+.about-icon{width:64px;height:64px;background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.25);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--gold);margin-bottom:1.25rem}
+.about-card h3{font-size:1.1rem;font-weight:700;margin-bottom:.6rem;color:var(--text)}
+.about-card p{color:var(--text-muted);font-size:.95rem;line-height:1.65}
+@media(max-width:768px){.about-cards{grid-template-columns:1fr}}
+</style>
+
+
+<!-- LEISTUNGEN -->
+<section id="leistungen">
+  <div class="container">
+    <div class="fade-in">
+      <p class="section-label">Was ich anbiete</p>
+      <h2 class="section-title">Meine <span style="color:var(--gold)">Leistungen</span></h2>
+      <p class="section-subtitle">Von der klassischen Immobiliendokumentation bis zur smarten KI-Automatisierung – alles aus einer Hand.</p>
+    </div>
+    <div class="services-grid">
+      <div class="service-card fade-in">
+        <div class="service-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+          </svg>
+        </div>
+        <h3>Exposé-Erstellung</h3>
+        <ul class="service-list">
+          <li>Professionelle Verkaufs- &amp; Vermietungsexposés</li>
+          <li>Textgestaltung, Layout &amp; Fotos</li>
+          <li>Lieferzeit: ab 2 Werktagen</li>
+        </ul>
+        <a href="#kontakt" class="service-link">Anfragen →</a>
+      </div>
+      <div class="service-card fade-in">
+        <div class="service-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/>
+            <line x1="9" y1="21" x2="9" y2="9"/><line x1="13" y1="13" x2="17" y2="13"/><line x1="13" y1="17" x2="17" y2="17"/>
+          </svg>
+        </div>
+        <h3>Immobiliendokumente</h3>
+        <ul class="service-list">
+          <li>Mietverträge nach deutschem Recht</li>
+          <li>Rechnungen &amp; Angebotsschreiben</li>
+          <li>Übergabeprotokolle</li>
+        </ul>
+        <a href="#kontakt" class="service-link">Anfragen →</a>
+      </div>
+      <div class="service-card fade-in">
+        <div class="service-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </div>
+        <h3>Virtuelle Assistenz</h3>
+        <ul class="service-list">
+          <li>Büro- &amp; Verwaltungsaufgaben</li>
+          <li>Inserate erstellen &amp; pflegen</li>
+          <li>E-Mail-Management</li>
+        </ul>
+        <a href="#kontakt" class="service-link">Anfragen →</a>
+      </div>
+      <div class="service-card fade-in">
+        <div class="service-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/>
+            <circle cx="7.5" cy="14.5" r="1.5"/><circle cx="16.5" cy="14.5" r="1.5"/>
+          </svg>
+        </div>
+        <h3>KI-Apps &amp; Automatisierung</h3>
+        <ul class="service-list">
+          <li>Kleine Web-Apps mit KI</li>
+          <li>Workflows mit Make.com / n8n</li>
+          <li>Exposé-Generatoren &amp; Tools</li>
+        </ul>
+        <a href="#kontakt" class="service-link">Anfragen →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+.services-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1.5rem}
+.service-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:2rem;display:flex;flex-direction:column;gap:.9rem;transition:border-color .3s,transform .3s,box-shadow .3s;position:relative;overflow:hidden}
+.service-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold-dark),var(--gold));opacity:0;transition:opacity .3s}
+.service-card:hover{border-color:var(--gold-dark);transform:translateY(-4px);box-shadow:0 12px 30px rgba(0,0,0,.3)}
+.service-card:hover::before{opacity:1}
+.service-icon{width:52px;height:52px;background:rgba(212,168,67,.1);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--gold)}
+.service-card h3{font-size:1.15rem;font-weight:700;color:var(--text)}
+.service-list{list-style:none;display:flex;flex-direction:column;gap:.45rem;flex:1}
+.service-list li{color:var(--text-muted);font-size:.92rem;padding-left:1.1rem;position:relative}
+.service-list li::before{content:'·';color:var(--gold);position:absolute;left:0;font-weight:700}
+.service-link{color:var(--gold);text-decoration:none;font-size:.88rem;font-weight:600;letter-spacing:.3px;transition:color .2s}
+.service-link:hover{color:var(--gold-light)}
+@media(max-width:640px){.services-grid{grid-template-columns:1fr}}
+</style>
+
+
+<!-- PREISE -->
+<section id="preise" style="background:var(--bg2)">
+  <div class="container">
+    <div class="fade-in">
+      <p class="section-label">Transparente Preise</p>
+      <h2 class="section-title">Faire <span style="color:var(--gold)">Konditionen</span></h2>
+      <p class="section-subtitle">Klare Preise, keine versteckten Kosten – wählen Sie das Paket, das zu Ihrem Bedarf passt.</p>
+    </div>
+    <div class="pricing-grid">
+      <!-- STARTER -->
+      <div class="pricing-card fade-in">
+        <div class="pricing-header">
+          <p class="pricing-tier">STARTER</p>
+          <p class="pricing-desc">Für einzelne Aufträge &amp; schnelle Lösungen</p>
+        </div>
+        <ul class="pricing-list">
+          <li><span class="price-item">Einfaches Exposé (1 Seite)</span><span class="price-val">30 €</span></li>
+          <li><span class="price-item">Standardmietvertrag</span><span class="price-val">25 €</span></li>
+          <li><span class="price-item">Einfaches Anschreiben</span><span class="price-val">15 €</span></li>
+        </ul>
+        <a href="#kontakt" class="pricing-btn pricing-btn-outline">Jetzt buchen</a>
+      </div>
+      <!-- PROFESSIONAL -->
+      <div class="pricing-card pricing-featured fade-in">
+        <div class="pricing-badge-top">Meistgewählt</div>
+        <div class="pricing-header">
+          <p class="pricing-tier">PROFESSIONAL</p>
+          <p class="pricing-desc">Für regelmäßige Zusammenarbeit &amp; mehr Umfang</p>
+        </div>
+        <ul class="pricing-list">
+          <li><span class="price-item">Vollständiges Exposé (2 S. + Layout)</span><span class="price-val">55 €</span></li>
+          <li><span class="price-item">Individueller Mietvertrag</span><span class="price-val">45 €</span></li>
+          <li><span class="price-item">Virtuelle Assistenz (5h/Woche)</span><span class="price-val">200 €/Mo.</span></li>
+        </ul>
+        <a href="#kontakt" class="pricing-btn pricing-btn-gold">Meistgewählt – Anfragen</a>
+      </div>
+      <!-- PREMIUM -->
+      <div class="pricing-card fade-in">
+        <div class="pricing-header">
+          <p class="pricing-tier">PREMIUM</p>
+          <p class="pricing-desc">Für anspruchsvolle Projekte &amp; Komplettlösungen</p>
+        </div>
+        <ul class="pricing-list">
+          <li><span class="price-item">Komplett-Exposé mit Branding</span><span class="price-val">90 €</span></li>
+          <li><span class="price-item">Komplett-Paket (Vertrag + Protokoll)</span><span class="price-val">75 €</span></li>
+          <li><span class="price-item">KI-Tool / Automatisierung</span><span class="price-val">ab 149 €</span></li>
+        </ul>
+        <a href="#kontakt" class="pricing-btn pricing-btn-outline">Jetzt anfragen</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;align-items:start}
+.pricing-card{background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:2rem;display:flex;flex-direction:column;gap:1.5rem;position:relative;transition:transform .3s,box-shadow .3s}
+.pricing-card:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(0,0,0,.35)}
+.pricing-featured{border-color:var(--gold-dark);background:linear-gradient(160deg,#2a2410 0%,var(--bg3) 60%);box-shadow:0 0 0 1px var(--gold-dark),0 20px 50px rgba(184,134,11,.15)}
+.pricing-badge-top{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:linear-gradient(90deg,var(--gold-dark),var(--gold));color:#1C1C1C;font-size:.75rem;font-weight:800;letter-spacing:1px;padding:.3rem 1rem;border-radius:50px;white-space:nowrap}
+.pricing-tier{font-size:.75rem;font-weight:800;letter-spacing:2px;color:var(--gold);margin-bottom:.4rem}
+.pricing-desc{color:var(--text-muted);font-size:.875rem;line-height:1.5}
+.pricing-list{list-style:none;display:flex;flex-direction:column;gap:.85rem;flex:1}
+.pricing-list li{display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;padding-bottom:.85rem;border-bottom:1px solid var(--border);font-size:.9rem}
+.pricing-list li:last-child{border-bottom:none;padding-bottom:0}
+.price-item{color:var(--text-muted);flex:1}
+.price-val{color:var(--gold);font-weight:700;white-space:nowrap}
+.pricing-btn{display:block;text-align:center;padding:.85rem;border-radius:var(--radius);font-weight:700;font-size:.95rem;text-decoration:none;transition:all .2s}
+.pricing-btn-outline{border:2px solid var(--gold-dark);color:var(--gold);background:transparent}
+.pricing-btn-outline:hover{background:rgba(212,168,67,.1)}
+.pricing-btn-gold{background:linear-gradient(90deg,var(--gold-dark),var(--gold));color:#1C1C1C}
+.pricing-btn-gold:hover{filter:brightness(1.1);transform:translateY(-1px)}
+@media(max-width:900px){.pricing-grid{grid-template-columns:1fr;max-width:400px;margin:0 auto}}
+</style>
+
+
+<!-- ABLAUF -->
+<section id="ablauf">
+  <div class="container">
+    <div class="fade-in">
+      <p class="section-label">So läuft es ab</p>
+      <h2 class="section-title">In 4 Schritten zum <span style="color:var(--gold)">Ergebnis</span></h2>
+    </div>
+    <div class="steps-grid fade-in">
+      <div class="step-card">
+        <div class="step-num">01</div>
+        <div class="step-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.59 3.38 2 2 0 0 1 3.56 1.21h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.77a16 16 0 0 0 6.29 6.29l.87-.87a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+          </svg>
+        </div>
+        <h3>Anfrage senden</h3>
+        <p>Kurze Beschreibung Ihres Projekts über das Kontaktformular – kostenlos &amp; unverbindlich.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">02</div>
+        <div class="step-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <h3>Briefing &amp; Absprache</h3>
+        <p>Wir klären alle Details in einem kurzen Gespräch und definieren Umfang, Deadline und Preis.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">03</div>
+        <div class="step-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </div>
+        <h3>Umsetzung &amp; Lieferung</h3>
+        <p>Professionelle Bearbeitung und pünktliche Lieferung in vereinbartem Format – per E-Mail oder Link.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">04</div>
+        <div class="step-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+        </div>
+        <h3>Feedback &amp; Freigabe</h3>
+        <p>Eine Korrekturschleife inklusive – bis Sie 100% zufrieden sind.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+.steps-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem;margin-top:2.5rem;position:relative}
+.steps-grid::before{content:'';position:absolute;top:36px;left:12%;right:12%;height:1px;background:linear-gradient(90deg,transparent,var(--gold-dark),var(--gold),var(--gold-dark),transparent);opacity:.4;pointer-events:none}
+.step-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.75rem 1.5rem;text-align:center;transition:border-color .3s,transform .3s}
+.step-card:hover{border-color:var(--gold-dark);transform:translateY(-4px)}
+.step-num{font-size:2.5rem;font-weight:900;color:rgba(212,168,67,.15);line-height:1;margin-bottom:.75rem;letter-spacing:-1px}
+.step-icon{width:52px;height:52px;background:rgba(212,168,67,.1);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--gold);margin:0 auto .9rem}
+.step-card h3{font-size:1rem;font-weight:700;margin-bottom:.5rem}
+.step-card p{color:var(--text-muted);font-size:.875rem;line-height:1.6}
+@media(max-width:900px){.steps-grid{grid-template-columns:repeat(2,1fr)}.steps-grid::before{display:none}}
+@media(max-width:480px){.steps-grid{grid-template-columns:1fr}}
+</style>
+
+<!-- KONTAKT -->
+<section id="kontakt" style="background:var(--bg2)">
+  <div class="container">
+    <div class="contact-wrap">
+      <div class="contact-info fade-in">
+        <p class="section-label">Kontakt</p>
+        <h2 class="section-title">Projekt<br><span style="color:var(--gold)">anfragen</span></h2>
+        <p style="color:var(--text-muted);margin-bottom:2rem;line-height:1.7">Beschreiben Sie kurz Ihr Anliegen – ich melde mich innerhalb von 24 Stunden mit einem Angebot zurück.</p>
+        <div class="contact-meta">
+          <div class="contact-meta-item">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+            </svg>
+            <a href="mailto:jorgepnt@gmail.com">jorgepnt@gmail.com</a>
+          </div>
+          <div class="contact-meta-item">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span>Antwort innerhalb von 24h</span>
+          </div>
+          <div class="contact-meta-item contact-free">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <span>Erstgespräch kostenlos</span>
+          </div>
+        </div>
+      </div>
+      <div class="contact-form-wrap fade-in">
+        <form id="contactForm" novalidate>
+          <div class="form-group">
+            <label for="name">Name *</label>
+            <input type="text" id="name" name="name" placeholder="Ihr vollständiger Name" autocomplete="name"/>
+            <span class="field-error" id="nameError"></span>
+          </div>
+          <div class="form-group">
+            <label for="email">E-Mail *</label>
+            <input type="email" id="email" name="email" placeholder="ihre@email.de" autocomplete="email"/>
+            <span class="field-error" id="emailError"></span>
+          </div>
+          <div class="form-group">
+            <label for="service">Gewünschte Leistung *</label>
+            <select id="service" name="service">
+              <option value="">Bitte wählen …</option>
+              <option>Exposé-Erstellung</option>
+              <option>Mietvertrag</option>
+              <option>Rechnung / Angebotsschreiben</option>
+              <option>Übergabeprotokoll</option>
+              <option>Virtuelle Assistenz</option>
+              <option>KI-App / Automatisierung</option>
+              <option>Sonstiges</option>
+            </select>
+            <span class="field-error" id="serviceError"></span>
+          </div>
+          <div class="form-group">
+            <label for="message">Nachricht *</label>
+            <textarea id="message" name="message" rows="5" placeholder="Beschreiben Sie kurz Ihr Projekt …"></textarea>
+            <span class="field-error" id="messageError"></span>
+          </div>
+          <button type="submit" class="form-submit" id="submitBtn">Anfrage senden</button>
+          <div class="form-success" id="formSuccess">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Vielen Dank! Ich melde mich innerhalb von 24h.
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+.contact-wrap{display:grid;grid-template-columns:1fr 1.4fr;gap:4rem;align-items:start}
+.contact-meta{display:flex;flex-direction:column;gap:.85rem}
+.contact-meta-item{display:flex;align-items:center;gap:.75rem;color:var(--text-muted);font-size:.9rem}
+.contact-meta-item svg{color:var(--gold);flex-shrink:0}
+.contact-meta-item a{color:var(--text-muted);text-decoration:none;transition:color .2s}
+.contact-meta-item a:hover{color:var(--gold)}
+.contact-free{color:var(--gold) !important;font-weight:600}
+.contact-free span{color:var(--gold)}
+.contact-form-wrap{background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:2rem}
+.form-group{display:flex;flex-direction:column;gap:.4rem;margin-bottom:1.25rem}
+.form-group label{font-size:.85rem;font-weight:600;color:var(--text-muted);letter-spacing:.3px}
+.form-group input,.form-group select,.form-group textarea{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:.75rem 1rem;color:var(--text);font-family:var(--font);font-size:.95rem;transition:border-color .2s,box-shadow .2s;outline:none;width:100%}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--gold-dark);box-shadow:0 0 0 3px rgba(184,134,11,.15)}
+.form-group input.error,.form-group select.error,.form-group textarea.error{border-color:#e05c5c}
+.form-group select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23A0A0A0' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 1rem center;padding-right:2.5rem}
+.form-group select option{background:var(--bg2)}
+.form-group textarea{resize:vertical;min-height:110px}
+.field-error{color:#e05c5c;font-size:.8rem;min-height:1rem}
+.form-submit{width:100%;background:linear-gradient(90deg,var(--gold-dark),var(--gold));color:#1C1C1C;border:none;padding:1rem;border-radius:var(--radius);font-size:1rem;font-weight:700;cursor:pointer;transition:filter .2s,transform .15s;letter-spacing:.3px}
+.form-submit:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.form-submit:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.form-success{display:none;align-items:center;gap:.6rem;color:var(--gold);font-weight:600;font-size:.95rem;margin-top:1rem;padding:1rem;background:rgba(212,168,67,.1);border-radius:var(--radius);border:1px solid rgba(212,168,67,.25)}
+.form-success.show{display:flex}
+@media(max-width:900px){.contact-wrap{grid-template-columns:1fr;gap:2.5rem}}
+</style>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <p class="footer-logo">Jorge Pinto</p>
+        <p class="footer-tagline">Ihr Partner für professionelle Immobiliendokumente<br>und digitale Dienstleistungen.</p>
+      </div>
+      <div class="footer-links-wrap">
+        <p class="footer-links-title">Rechtliches</p>
+        <div class="footer-links">
+          <a href="#impressum">Impressum</a>
+          <a href="#datenschutz">Datenschutz</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2025 Jorge Pinto. Alle Rechte vorbehalten.</p>
+      <p>Made with <span style="color:var(--gold)">♥</span> in Deutschland</p>
+    </div>
+  </div>
+</footer>
+
+<style>
+footer{background:#141414;border-top:1px solid var(--border);padding:3rem 1.5rem 2rem}
+.footer-top{display:flex;justify-content:space-between;align-items:flex-start;gap:2rem;margin-bottom:2.5rem;padding-bottom:2.5rem;border-bottom:1px solid var(--border)}
+.footer-logo{font-size:1.2rem;font-weight:700;color:var(--gold);margin-bottom:.5rem}
+.footer-tagline{color:var(--text-muted);font-size:.875rem;line-height:1.65}
+.footer-links-title{color:var(--text-muted);font-size:.78rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:.75rem}
+.footer-links{display:flex;gap:1.5rem}
+.footer-links a{color:var(--text-muted);text-decoration:none;font-size:.875rem;transition:color .2s}
+.footer-links a:hover{color:var(--gold)}
+.footer-bottom{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+.footer-bottom p{color:var(--text-muted);font-size:.825rem}
+@media(max-width:600px){.footer-top{flex-direction:column}.footer-bottom{justify-content:center;text-align:center}}
+</style>
+
+<!-- JAVASCRIPT -->
+<script>
+(function(){
+  // Hamburger Menu
+  const hamburger = document.getElementById('hamburger');
+  const mobileMenu = document.getElementById('mobileMenu');
+  hamburger.addEventListener('click', () => {
+    hamburger.classList.toggle('open');
+    mobileMenu.classList.toggle('open');
+  });
+  document.querySelectorAll('.mobile-link').forEach(link => {
+    link.addEventListener('click', () => {
+      hamburger.classList.remove('open');
+      mobileMenu.classList.remove('open');
+    });
+  });
+
+  // Nav scroll shadow + active links
+  const navbar = document.getElementById('navbar');
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.nav-links a');
+  window.addEventListener('scroll', () => {
+    navbar.classList.toggle('scrolled', window.scrollY > 20);
+  });
+  const navObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + entry.target.id));
+      }
+    });
+  }, {rootMargin:'-40% 0px -55% 0px'});
+  sections.forEach(s => navObserver.observe(s));
+
+  // Fade-in on scroll
+  const fadeObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); fadeObserver.unobserve(e.target); } });
+  }, {threshold: 0.12});
+  document.querySelectorAll('.fade-in').forEach(el => fadeObserver.observe(el));
+  // Hero visible immediately
+  const heroEl = document.querySelector('#hero .fade-in');
+  if (heroEl) heroEl.classList.add('visible');
+
+  // Contact form validation
+  const form = document.getElementById('contactForm');
+  const submitBtn = document.getElementById('submitBtn');
+  const formSuccess = document.getElementById('formSuccess');
+
+  function showError(fieldId, errId, msg) {
+    document.getElementById(fieldId).classList.add('error');
+    document.getElementById(errId).textContent = msg;
+  }
+  function clearError(fieldId, errId) {
+    document.getElementById(fieldId).classList.remove('error');
+    document.getElementById(errId).textContent = '';
+  }
+
+  ['name','email','service','message'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => {
+      const errMap = {name:'nameError',email:'emailError',service:'serviceError',message:'messageError'};
+      clearError(id, errMap[id]);
+    });
+  });
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    let valid = true;
+    const name = document.getElementById('name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const service = document.getElementById('service').value;
+    const message = document.getElementById('message').value.trim();
+
+    if (!name) { showError('name','nameError','Bitte geben Sie Ihren Namen ein.'); valid=false; }
+    else clearError('name','nameError');
+
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email) { showError('email','emailError','Bitte geben Sie Ihre E-Mail-Adresse ein.'); valid=false; }
+    else if (!emailRe.test(email)) { showError('email','emailError','Bitte geben Sie eine gültige E-Mail-Adresse ein.'); valid=false; }
+    else clearError('email','emailError');
+
+    if (!service) { showError('service','serviceError','Bitte wählen Sie eine Leistung aus.'); valid=false; }
+    else clearError('service','serviceError');
+
+    if (!message) { showError('message','messageError','Bitte beschreiben Sie Ihr Anliegen kurz.'); valid=false; }
+    else if (message.length < 10) { showError('message','messageError','Bitte schreiben Sie mindestens 10 Zeichen.'); valid=false; }
+    else clearError('message','messageError');
+
+    if (valid) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Wird gesendet …';
+      setTimeout(() => {
+        form.reset();
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Anfrage senden';
+        formSuccess.classList.add('show');
+        setTimeout(() => formSuccess.classList.remove('show'), 6000);
+      }, 900);
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
+
+
+
+
