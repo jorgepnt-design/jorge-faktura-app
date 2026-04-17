@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jorge Organizer</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #1a1a1a; }
+
+    /* ── Auth ── */
+    #auth-screen { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+    .auth-card { background: white; border-radius: 16px; padding: 32px; width: 100%; max-width: 380px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+    .auth-logo { font-size: 26px; font-weight: 800; color: #1a1a1a; margin-bottom: 6px; }
+    .auth-sub { color: #888; font-size: 14px; margin-bottom: 28px; }
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 11px; font-weight: 700; color: #666; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
+    .form-input { width: 100%; padding: 12px 14px; border: 1.5px solid #e0e0e0; border-radius: 10px; font-size: 15px; outline: none; transition: border-color 0.2s; }
+    .form-input:focus { border-color: #2563eb; }
+    .btn-primary { width: 100%; padding: 13px; background: #2563eb; color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-primary:disabled { background: #93c5fd; cursor: not-allowed; }
+    .auth-error { color: #dc2626; font-size: 13px; margin-top: 10px; display: none; text-align: center; }
+
+    /* ── App ── */
+    #app-screen { display: none; min-height: 100vh; }
+    .header { background: white; border-bottom: 1px solid #e5e7eb; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+    .header-title { font-size: 20px; font-weight: 800; }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .avatar { width: 36px; height: 36px; border-radius: 50%; background: #2563eb; color: white; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; overflow: hidden; flex-shrink: 0; }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .btn-logout { padding: 7px 14px; border: 1.5px solid #e0e0e0; border-radius: 8px; background: white; color: #444; font-size: 14px; cursor: pointer; font-weight: 500; }
+    .btn-logout:hover { background: #f5f5f5; }
+
+    /* ── Tabs ── */
+    .tabs { background: white; border-bottom: 1px solid #e5e7eb; display: flex; padding: 0 16px; }
+    .tab { padding: 14px 16px; font-size: 15px; color: #777; cursor: pointer; border-bottom: 2.5px solid transparent; font-weight: 500; transition: color 0.15s; }
+    .tab.active { color: #2563eb; border-bottom-color: #2563eb; }
+    .tab-content { display: none; padding: 16px; }
+    .tab-content.active { display: block; }
+
+    /* ── Table selector ── */
+    .table-selector { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+    .table-tab { display: flex; align-items: center; gap: 6px; padding: 7px 14px; border: 1.5px solid #e0e0e0; border-radius: 20px; background: white; cursor: pointer; font-size: 14px; font-weight: 500; color: #444; transition: all 0.15s; }
+    .table-tab.active { border-color: #2563eb; color: #2563eb; background: #eff6ff; }
+    .table-tab-btn { background: none; border: none; cursor: pointer; padding: 1px 3px; color: #aaa; font-size: 14px; line-height: 1; }
+    .table-tab-btn:hover { color: #2563eb; }
+    .table-tab-btn.del:hover { color: #dc2626; }
+    .btn-new-table { padding: 7px 14px; border: 1.5px dashed #b0b0b0; border-radius: 20px; background: none; cursor: pointer; font-size: 14px; color: #777; font-weight: 500; transition: all 0.15s; }
+    .btn-new-table:hover { border-color: #2563eb; color: #2563eb; }
+
+    /* ── Layout ── */
+    .dichte-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 700px) { .dichte-layout { grid-template-columns: 1fr; } }
+
+    /* ── Card ── */
+    .card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 1px 6px rgba(0,0,0,0.06); }
+    .card-title { font-size: 17px; font-weight: 700; margin-bottom: 16px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+
+    /* ── Results table ── */
+    .results-panel { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 1px 6px rgba(0,0,0,0.06); }
+    .results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .results-title { font-size: 17px; font-weight: 700; }
+    .btn-excel { background: #16a34a; color: white; border: none; padding: 7px 14px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 13px; }
+    .btn-excel:hover { background: #15803d; }
+    .results-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .results-table th { text-align: left; font-size: 10px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 0.5px; padding: 6px 8px; border-bottom: 1px solid #f0f0f0; }
+    .results-table td { padding: 8px 8px; border-bottom: 1px solid #f5f5f5; color: #333; vertical-align: middle; }
+    .results-table tr:last-child td { border-bottom: none; }
+    .results-table .density-val { font-weight: 700; color: #2563eb; }
+    .results-table .avg-row td { background: #eff6ff; font-weight: 700; color: #1e40af; }
+    .results-table .avg-row .density-val { font-size: 15px; color: #2563eb; }
+    .btn-del-row { background: none; border: none; cursor: pointer; color: #ddd; font-size: 15px; padding: 2px 4px; }
+    .btn-del-row:hover { color: #dc2626; }
+
+    /* ── Todos ── */
+    .todo-add-row { display: flex; gap: 10px; margin-bottom: 14px; }
+    .todo-input { flex: 1; padding: 12px 14px; border: 1.5px solid #e0e0e0; border-radius: 10px; font-size: 15px; outline: none; }
+    .todo-input:focus { border-color: #2563eb; }
+    .btn-add { padding: 12px 18px; background: #2563eb; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: 700; font-size: 20px; line-height: 1; }
+    .btn-add:hover { background: #1d4ed8; }
+    .todo-item { display: flex; align-items: center; gap: 12px; background: white; border-radius: 12px; padding: 14px 16px; margin-bottom: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+    .todo-check { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #d0d0d0; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; transition: all 0.15s; }
+    .todo-check.done { background: #22c55e; border-color: #22c55e; color: white; }
+    .todo-text { flex: 1; font-size: 15px; }
+    .todo-text.done { text-decoration: line-through; color: #aaa; }
+    .btn-del-todo { background: none; border: none; cursor: pointer; color: #ddd; font-size: 20px; line-height: 1; }
+    .btn-del-todo:hover { color: #dc2626; }
+
+    /* ── Empty ── */
+    .empty { text-align: center; padding: 48px 20px; color: #bbb; }
+    .empty-icon { font-size: 42px; margin-bottom: 12px; }
+
+    /* ── Modal ── */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 50; align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: white; border-radius: 16px; padding: 24px; width: 100%; max-width: 360px; }
+    .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+    .modal-btns { display: flex; gap: 10px; margin-top: 20px; }
+    .btn-cancel { flex: 1; padding: 11px; border: 1.5px solid #e0e0e0; border-radius: 10px; background: white; cursor: pointer; font-size: 15px; }
+    .btn-confirm { flex: 1; padding: 11px; background: #2563eb; color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 15px; font-weight: 600; }
+    .btn-confirm:hover { background: #1d4ed8; }
+
+    /* ── Toast ── */
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: white; padding: 10px 22px; border-radius: 22px; font-size: 14px; font-weight: 500; z-index: 100; opacity: 0; transition: opacity 0.25s; pointer-events: none; white-space: nowrap; }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">Jorge Organizer</div>
+    <div class="auth-sub">Melde dich an um fortzufahren</div>
+    <div class="form-group">
+      <label class="form-label">E-Mail</label>
+      <input type="email" id="inp-email" class="form-input" placeholder="deine@email.de">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Passwort</label>
+      <input type="password" id="inp-pw" class="form-input" placeholder="••••••••" onkeydown="if(event.key==='Enter') login()">
+    </div>
+    <button class="btn-primary" id="login-btn" onclick="login()">Anmelden</button>
+    <div class="auth-error" id="auth-err"></div>
+  </div>
+</div>
+
+<div id="app-screen">
+  <div class="header">
+    <div class="header-title">Jorge Organizer</div>
+    <div class="header-right">
+      <div class="avatar" id="user-avatar"></div>
+      <button class="btn-logout" onclick="logout()">Abmelden</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('dichte')">Dichte berechnen</div>
+    <div class="tab" onclick="switchTab('todos')">To-dos</div>
+  </div>
+  <div class="tab-content active" id="tab-dichte">
+    <div class="table-selector" id="table-selector"></div>
+    <div class="dichte-layout" id="dichte-main">
+      <div class="card">
+        <div class="card-title">Abmessungen &amp; Masse</div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Länge (mm)</label><input type="number" id="inp-l" class="form-input" placeholder="z.B. 234" min="0" step="any"></div>
+          <div class="form-group"><label class="form-label">Breite (mm)</label><input type="number" id="inp-b" class="form-input" placeholder="z.B. 44.5" min="0" step="any"></div>
+          <div class="form-group"><label class="form-label">Dicke (mm)</label><input type="number" id="inp-d" class="form-input" placeholder="z.B. 3" min="0" step="any"></div>
+          <div class="form-group"><label class="form-label">Masse (g)</label><input type="number" id="inp-m" class="form-input" placeholder="z.B. 4" min="0" step="any"></div>
+        </div>
+        <button class="btn-primary" onclick="berechnen()">Berechnen &amp; Speichern</button>
+      </div>
+      <div class="results-panel">
+        <div class="results-header">
+          <span class="results-title" id="results-title">Ergebnisse</span>
+          <button class="btn-excel" onclick="exportExcel()">⬇ Excel</button>
+        </div>
+        <div id="entries-list"></div>
+      </div>
+    </div>
+    <div id="dichte-empty" style="display:none"><div class="empty"><div class="empty-icon">📋</div><div>Erstelle eine Tabelle um zu starten</div></div></div>
+  </div>
+  <div class="tab-content" id="tab-todos">
+    <div class="todo-add-row">
+      <input type="text" id="todo-input" class="todo-input" placeholder="Neue Aufgabe..." onkeydown="if(event.key==='Enter') addTodo()">
+      <button class="btn-add" onclick="addTodo()">+</button>
+    </div>
+    <div id="todo-list"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-rename">
+  <div class="modal">
+    <div class="modal-title">Tabelle umbenennen</div>
+    <input type="text" id="inp-rename" class="form-input" placeholder="Name eingeben">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-rename')">Abbrechen</button>
+      <button class="btn-confirm" onclick="confirmRename()">Speichern</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-new-table">
+  <div class="modal">
+    <div class="modal-title">Neue Tabelle</div>
+    <input type="text" id="inp-new-table" class="form-input" placeholder="z.B. UA 26-001" onkeydown="if(event.key==='Enter') confirmNewTable()">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-new-table')">Abbrechen</button>
+      <button class="btn-confirm" onclick="confirmNewTable()">Erstellen</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL='https://ylbfimgvfnhlwtjxwvov.supabase.co';
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlsYmZpbWd2Zm5obHd0anh3dm92Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwNzY0NDIsImV4cCI6MjA5MTY1MjQ0Mn0.jGAO4pZHfRcSIcJjwgHclvaEn-6dhn8wcGLS72YYYtM';
+const {createClient}=supabase;
+const db=createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+const state={user:null,data:{tables:[],todos:[]},activeTableId:null,renamingId:null};
+
+async function login(){
+  const email=document.getElementById('inp-email').value.trim();
+  const pw=document.getElementById('inp-pw').value;
+  const btn=document.getElementById('login-btn');
+  if(!email||!pw){showErr('Bitte E-Mail und Passwort eingeben.');return;}
+  btn.disabled=true;btn.textContent='Anmelden…';
+  document.getElementById('auth-err').style.display='none';
+  const{data,error}=await db.auth.signInWithPassword({email,password:pw});
+  if(error){showErr(error.message.includes('Invalid')?'Falsche E-Mail oder Passwort.':error.message);btn.disabled=false;btn.textContent='Anmelden';return;}
+  state.user=data.user;await startApp();
+}
+function showErr(msg){const el=document.getElementById('auth-err');el.textContent=msg;el.style.display='block';}
+async function logout(){await db.auth.signOut();state.user=null;state.data={tables:[],todos:[]};state.activeTableId=null;document.getElementById('app-screen').style.display='none';document.getElementById('auth-screen').style.display='flex';}
+async function loadData(){const{data,error}=await db.from('user_data').select('data').eq('user_id',state.user.id).single();if(error&&error.code!=='PGRST116'){console.error(error);return;}const org=data?.data?.organizer;if(org)state.data={tables:org.tables||[],todos:org.todos||[]};}
+async function saveData(){const{data:existing}=await db.from('user_data').select('data').eq('user_id',state.user.id).single();const merged={...(existing?.data||{}),organizer:state.data};const{error}=await db.from('user_data').upsert({user_id:state.user.id,data:merged,updated_at:new Date().toISOString()});if(error)console.error(error);}
+async function startApp(){document.getElementById('auth-screen').style.display='none';document.getElementById('app-screen').style.display='block';const av=document.getElementById('user-avatar');const meta=state.user.user_metadata||{};if(meta.avatar_url){av.innerHTML=`<img src="${meta.avatar_url}" alt="">`;}else{av.textContent=(state.user.email||'?').slice(0,2).toUpperCase();}await loadData();if(state.data.tables.length>0)state.activeTableId=state.data.tables[0].id;renderTableSelector();renderEntries();renderTodos();}
+function switchTab(tab){document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',(tab==='dichte')?i===0:i===1));document.getElementById('tab-dichte').classList.toggle('active',tab==='dichte');document.getElementById('tab-todos').classList.toggle('active',tab==='todos');}
+function renderTableSelector(){const c=document.getElementById('table-selector');c.innerHTML='';state.data.tables.forEach(t=>{const active=t.id===state.activeTableId;const div=document.createElement('div');div.className=`table-tab${active?' active':''}`;div.innerHTML=`<span onclick="selectTable('${t.id}')">${esc(t.name)}</span><button class="table-tab-btn" onclick="openRename('${t.id}')" title="Umbenennen">✎</button><button class="table-tab-btn del" onclick="deleteTable('${t.id}')" title="Löschen">×</button>`;c.appendChild(div);});const nb=document.createElement('button');nb.className='btn-new-table';nb.textContent='+ Neue Tabelle';nb.onclick=()=>{document.getElementById('inp-new-table').value='';openModal('modal-new-table');};c.appendChild(nb);}
+function selectTable(id){state.activeTableId=id;renderTableSelector();renderEntries();}
+function openRename(id){state.renamingId=id;const t=state.data.tables.find(t=>t.id===id);document.getElementById('inp-rename').value=t.name;openModal('modal-rename');setTimeout(()=>document.getElementById('inp-rename').focus(),100);}
+async function confirmRename(){const name=document.getElementById('inp-rename').value.trim();if(!name)return;const t=state.data.tables.find(t=>t.id===state.renamingId);if(t)t.name=name;closeModal('modal-rename');await saveData();renderTableSelector();toast('Umbenannt');}
+async function confirmNewTable(){const name=document.getElementById('inp-new-table').value.trim();if(!name)return;const t={id:uuid(),name,entries:[]};state.data.tables.push(t);state.activeTableId=t.id;closeModal('modal-new-table');await saveData();renderTableSelector();renderEntries();toast('Tabelle erstellt');}
+async function deleteTable(id){if(!confirm('Tabelle und alle Einträge löschen?'))return;state.data.tables=state.data.tables.filter(t=>t.id!==id);if(state.activeTableId===id)state.activeTableId=state.data.tables[0]?.id||null;await saveData();renderTableSelector();renderEntries();toast('Tabelle gelöscht');}
+async function berechnen(){if(!state.activeTableId){toast('Bitte zuerst eine Tabelle wählen');return;}const l=parseFloat(document.getElementById('inp-l').value);const b=parseFloat(document.getElementById('inp-b').value);const d=parseFloat(document.getElementById('inp-d').value);const m=parseFloat(document.getElementById('inp-m').value);if([l,b,d,m].some(v=>isNaN(v)||v<=0)){toast('Bitte alle Felder korrekt ausfüllen');return;}const dichte=(m*1000000)/(l*b*d);const entry={id:uuid(),laenge:l,breite:b,dicke:d,masse:m,dichte:round(dichte,2),createdAt:new Date().toISOString()};const tbl=state.data.tables.find(t=>t.id===state.activeTableId);if(tbl){tbl.entries=tbl.entries||[];tbl.entries.unshift(entry);}['inp-l','inp-b','inp-d','inp-m'].forEach(id=>document.getElementById(id).value='');await saveData();renderEntries();toast('Gespeichert ✓');}
+function renderEntries(){const main=document.getElementById('dichte-main');const empty=document.getElementById('dichte-empty');const list=document.getElementById('entries-list');const titleEl=document.getElementById('results-title');if(!state.activeTableId){main.style.display='none';empty.style.display='block';return;}main.style.display='grid';empty.style.display='none';const tbl=state.data.tables.find(t=>t.id===state.activeTableId);if(titleEl)titleEl.textContent=tbl?.name||'Ergebnisse';const entries=tbl?.entries||[];if(!entries.length){list.innerHTML='<div class="empty"><div class="empty-icon">🔢</div><div>Noch keine Berechnungen</div></div>';return;}const avg=entries.reduce((s,e)=>s+e.dichte,0)/entries.length;list.innerHTML=`<table class="results-table"><thead><tr><th>Datum</th><th>L (mm)</th><th>B (mm)</th><th>D (mm)</th><th>Masse (g)</th><th>Dichte (kg/m³)</th><th></th></tr></thead><tbody>${entries.map(e=>`<tr><td>${fmtDate(e.createdAt)}</td><td>${e.laenge}</td><td>${e.breite}</td><td>${e.dicke}</td><td>${e.masse}</td><td class="density-val">${e.dichte.toFixed(2).replace('.',',')}</td><td><button class="btn-del-row" onclick="deleteEntry('${tbl.id}','${e.id}')">✕</button></td></tr>`).join('')}<tr class="avg-row"><td colspan="5">Durchschnitt</td><td class="density-val">${avg.toFixed(2).replace('.',',')} kg/m³</td><td></td></tr></tbody></table>`;}
+async function deleteEntry(tblId,entryId){const tbl=state.data.tables.find(t=>t.id===tblId);if(tbl)tbl.entries=tbl.entries.filter(e=>e.id!==entryId);await saveData();renderEntries();toast('Eintrag gelöscht');}
+async function addTodo(){const inp=document.getElementById('todo-input');const text=inp.value.trim();if(!text)return;state.data.todos=state.data.todos||[];state.data.todos.unshift({id:uuid(),text,done:false,createdAt:new Date().toISOString()});inp.value='';await saveData();renderTodos();}
+async function toggleTodo(id){const t=state.data.todos.find(t=>t.id===id);if(t)t.done=!t.done;await saveData();renderTodos();}
+async function deleteTodo(id){state.data.todos=state.data.todos.filter(t=>t.id!==id);await saveData();renderTodos();}
+function renderTodos(){const list=document.getElementById('todo-list');const todos=state.data.todos||[];if(!todos.length){list.innerHTML='<div class="empty"><div class="empty-icon">✅</div><div>Keine Aufgaben</div></div>';return;}const sorted=[...todos].sort((a,b)=>(a.done===b.done?0:a.done?1:-1));list.innerHTML=sorted.map(t=>`<div class="todo-item"><div class="todo-check ${t.done?'done':''}" onclick="toggleTodo('${t.id}')">${t.done?'✓':''}</div><div class="todo-text ${t.done?'done':''}">${esc(t.text)}</div><button class="btn-del-todo" onclick="deleteTodo('${t.id}')">×</button></div>`).join('');}
+function exportExcel(){const tbl=state.data.tables.find(t=>t.id===state.activeTableId);if(!tbl||!tbl.entries?.length){toast('Keine Daten zum Exportieren');return;}const avg=tbl.entries.reduce((s,e)=>s+e.dichte,0)/tbl.entries.length;const rows=tbl.entries.map(e=>({'Datum':fmtDate(e.createdAt),'L (mm)':e.laenge,'B (mm)':e.breite,'D (mm)':e.dicke,'Masse (g)':e.masse,'Dichte (kg/m³)':e.dichte}));rows.push({'Datum':'DURCHSCHNITT','L (mm)':'','B (mm)':'','D (mm)':'','Masse (g)':'','Dichte (kg/m³)':round(avg,2)});const ws=XLSX.utils.json_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,tbl.name);XLSX.writeFile(wb,`${tbl.name}.xlsx`);}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function uuid(){return crypto.randomUUID();}
+function round(v,d){return Math.round(v*10**d)/10**d;}
+function fmtDate(iso){const d=new Date(iso);return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getFullYear()).slice(2)}`;}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+let toastTimer;
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2500);}
+(async()=>{const{data:{session}}=await db.auth.getSession();if(session){state.user=session.user;await startApp();}})();
+</script>
+</body>
+</html>
