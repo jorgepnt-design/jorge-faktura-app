@@ -193,11 +193,17 @@
 
   <!-- Todos Tab -->
   <div class="tab-content" id="tab-todos">
-    <div class="todo-add-row">
-      <input type="text" id="todo-input" class="todo-input" placeholder="Neue Aufgabe..." onkeydown="if(event.key==='Enter') addTodo()">
-      <button class="btn-add" onclick="addTodo()">+</button>
+    <div class="table-selector" id="folder-selector"></div>
+    <div id="todos-no-folder" style="display:none">
+      <div class="empty"><div class="empty-icon">📁</div><div>Erstelle einen Ordner um loszulegen</div></div>
     </div>
-    <div id="todo-list"></div>
+    <div id="todos-main">
+      <div class="todo-add-row">
+        <input type="text" id="todo-input" class="todo-input" placeholder="Neue Aufgabe..." onkeydown="if(event.key==='Enter') addTodo()">
+        <button class="btn-add" onclick="addTodo()">+</button>
+      </div>
+      <div id="todo-list"></div>
+    </div>
   </div>
 </div>
 
@@ -209,6 +215,30 @@
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal('modal-rename')">Abbrechen</button>
       <button class="btn-confirm" onclick="confirmRename()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Folder Modal -->
+<div class="modal-overlay" id="modal-new-folder">
+  <div class="modal">
+    <div class="modal-title">Neuer Ordner</div>
+    <input type="text" id="inp-new-folder" class="form-input" placeholder="z.B. Arbeit" onkeydown="if(event.key==='Enter') confirmNewFolder()">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-new-folder')">Abbrechen</button>
+      <button class="btn-confirm" onclick="confirmNewFolder()">Erstellen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Rename Folder Modal -->
+<div class="modal-overlay" id="modal-rename-folder">
+  <div class="modal">
+    <div class="modal-title">Ordner umbenennen</div>
+    <input type="text" id="inp-rename-folder" class="form-input" placeholder="Name eingeben" onkeydown="if(event.key==='Enter') confirmRenameFolder()">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-rename-folder')">Abbrechen</button>
+      <button class="btn-confirm" onclick="confirmRenameFolder()">Speichern</button>
     </div>
   </div>
 </div>
@@ -236,9 +266,11 @@ const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const state = {
   user: null,
-  data: { tables: [], todos: [] },
+  data: { tables: [], todos: [], todoFolders: [] },
   activeTableId: null,
+  activeFolderId: null,
   renamingId: null,
+  renamingFolderId: null,
 };
 
 async function login() {
@@ -275,7 +307,7 @@ async function loadData() {
   const { data, error } = await db.from('user_data').select('data').eq('user_id', state.user.id).single();
   if (error && error.code !== 'PGRST116') { console.error(error); return; }
   const org = data?.data?.organizer;
-  if (org) state.data = { tables: org.tables || [], todos: org.todos || [] };
+  if (org) state.data = { tables: org.tables || [], todos: org.todos || [], todoFolders: org.todoFolders || [] };
 }
 
 async function saveData() {
@@ -293,8 +325,15 @@ async function startApp() {
   if (meta.avatar_url) { av.innerHTML = `<img src="${meta.avatar_url}" alt="">`; }
   else { av.textContent = (state.user.email || '?').slice(0, 2).toUpperCase(); }
   await loadData();
+  // Migrate old flat todos into a default folder
+  if (state.data.todos.length > 0 && state.data.todoFolders.length === 0) {
+    state.data.todoFolders = [{ id: uuid(), name: 'Allgemein', todos: state.data.todos }];
+    state.data.todos = [];
+    await saveData();
+  }
   if (state.data.tables.length > 0) state.activeTableId = state.data.tables[0].id;
-  renderTableSelector(); renderEntries(); renderTodos();
+  if (state.data.todoFolders.length > 0) state.activeFolderId = state.data.todoFolders[0].id;
+  renderTableSelector(); renderEntries(); renderFolderSelector(); renderTodos();
 }
 
 function switchTab(tab) {
@@ -419,30 +458,97 @@ async function deleteEntry(tblId, entryId) {
   await saveData(); renderEntries(); toast('Eintrag gelöscht');
 }
 
+// ── Folder functions ──
+function renderFolderSelector() {
+  const c = document.getElementById('folder-selector');
+  c.innerHTML = '';
+  state.data.todoFolders.forEach(f => {
+    const active = f.id === state.activeFolderId;
+    const div = document.createElement('div');
+    div.className = `table-tab${active ? ' active' : ''}`;
+    div.innerHTML = `<span onclick="selectFolder('${f.id}')">📁 ${esc(f.name)}</span><button class="table-tab-btn" onclick="openRenameFolder('${f.id}')" title="Umbenennen">✎</button><button class="table-tab-btn del" onclick="deleteFolder('${f.id}')" title="Löschen">×</button>`;
+    c.appendChild(div);
+  });
+  const nb = document.createElement('button');
+  nb.className = 'btn-new-table'; nb.textContent = '+ Neuer Ordner';
+  nb.onclick = () => { document.getElementById('inp-new-folder').value = ''; openModal('modal-new-folder'); setTimeout(() => document.getElementById('inp-new-folder').focus(), 100); };
+  c.appendChild(nb);
+  const todosMain = document.getElementById('todos-main');
+  const noFolder  = document.getElementById('todos-no-folder');
+  if (state.activeFolderId) { todosMain.style.display = 'block'; noFolder.style.display = 'none'; }
+  else                      { todosMain.style.display = 'none';  noFolder.style.display = 'block'; }
+}
+
+function selectFolder(id) { state.activeFolderId = id; renderFolderSelector(); renderTodos(); }
+
+function openRenameFolder(id) {
+  state.renamingFolderId = id;
+  const f = state.data.todoFolders.find(f => f.id === id);
+  document.getElementById('inp-rename-folder').value = f.name;
+  openModal('modal-rename-folder');
+  setTimeout(() => document.getElementById('inp-rename-folder').focus(), 100);
+}
+
+async function confirmRenameFolder() {
+  const name = document.getElementById('inp-rename-folder').value.trim();
+  if (!name) return;
+  const f = state.data.todoFolders.find(f => f.id === state.renamingFolderId);
+  if (f) f.name = name;
+  closeModal('modal-rename-folder');
+  await saveData(); renderFolderSelector(); toast('Ordner umbenannt');
+}
+
+async function confirmNewFolder() {
+  const name = document.getElementById('inp-new-folder').value.trim();
+  if (!name) return;
+  const f = { id: uuid(), name, todos: [] };
+  state.data.todoFolders.push(f);
+  state.activeFolderId = f.id;
+  closeModal('modal-new-folder');
+  await saveData(); renderFolderSelector(); renderTodos(); toast('Ordner erstellt');
+}
+
+async function deleteFolder(id) {
+  const f = state.data.todoFolders.find(f => f.id === id);
+  if (!confirm(`Ordner "${f?.name}" und alle Aufgaben darin löschen?`)) return;
+  state.data.todoFolders = state.data.todoFolders.filter(f => f.id !== id);
+  if (state.activeFolderId === id) state.activeFolderId = state.data.todoFolders[0]?.id || null;
+  await saveData(); renderFolderSelector(); renderTodos(); toast('Ordner gelöscht');
+}
+
+// ── Todo functions ──
 async function addTodo() {
   const inp = document.getElementById('todo-input');
   const text = inp.value.trim();
   if (!text) return;
-  state.data.todos = state.data.todos || [];
-  state.data.todos.unshift({ id: uuid(), text, done: false, createdAt: new Date().toISOString() });
+  if (!state.activeFolderId) { toast('Bitte zuerst einen Ordner wählen'); return; }
+  const folder = state.data.todoFolders.find(f => f.id === state.activeFolderId);
+  if (!folder) return;
+  folder.todos = folder.todos || [];
+  folder.todos.unshift({ id: uuid(), text, done: false, createdAt: new Date().toISOString() });
   inp.value = '';
   await saveData(); renderTodos();
 }
 
 async function toggleTodo(id) {
-  const t = state.data.todos.find(t => t.id === id);
+  const folder = state.data.todoFolders.find(f => f.id === state.activeFolderId);
+  if (!folder) return;
+  const t = folder.todos.find(t => t.id === id);
   if (t) t.done = !t.done;
   await saveData(); renderTodos();
 }
 
 async function deleteTodo(id) {
-  state.data.todos = state.data.todos.filter(t => t.id !== id);
-  await saveData(); renderTodos();
+  const folder = state.data.todoFolders.find(f => f.id === state.activeFolderId);
+  if (!folder) return;
+  folder.todos = folder.todos.filter(t => t.id !== id);
+  await saveData(); renderTodos(); toast('Aufgabe gelöscht');
 }
 
 function renderTodos() {
   const list = document.getElementById('todo-list');
-  const todos = state.data.todos || [];
+  const folder = state.data.todoFolders.find(f => f.id === state.activeFolderId);
+  const todos = folder?.todos || [];
   if (!todos.length) { list.innerHTML = `<div class="empty"><div class="empty-icon">✅</div><div>Keine Aufgaben</div></div>`; return; }
   const sorted = [...todos].sort((a, b) => (a.done === b.done ? 0 : a.done ? 1 : -1));
   list.innerHTML = sorted.map(t => `
