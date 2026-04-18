@@ -4,9 +4,11 @@ import Header from './Header';
 import BottomNav from './BottomNav';
 import Sidebar from './Sidebar';
 import {
-  LayoutDashboard, Users, FileText, Truck, PenLine, LayoutTemplate, Settings, LogOut, ChevronDown
+  LayoutDashboard, Users, FileText, Truck, PenLine, LayoutTemplate, Settings, LogOut, ChevronDown,
+  Sun, Moon
 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
+import { useDarkMode } from '../../hooks/useDarkMode';
 
 const routeTitles: Record<string, string> = {
   '/': 'Dashboard',
@@ -32,6 +34,7 @@ export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const { logout, getLoggedInProfile, profiles, switchProfile, loggedInProfileId } = useStore();
+  const [dark, setDark] = useDarkMode();
   const profile = getLoggedInProfile();
   const location = useLocation();
 
@@ -40,14 +43,21 @@ export default function AppLayout() {
   )?.[1] ?? 'Jorge Faktura';
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-60 bg-white border-r border-slate-200 fixed top-0 left-0 bottom-0 z-30">
-        <div className="flex items-center gap-3 p-5 border-b border-slate-100">
+      <aside className="hidden md:flex flex-col w-60 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 fixed top-0 left-0 bottom-0 z-30">
+        <div className="flex items-center gap-3 p-5 border-b border-slate-100 dark:border-slate-700">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
             <FileText className="w-4 h-4 text-white" />
           </div>
-          <span className="font-bold text-slate-900">Jorge Faktura</span>
+          <span className="font-bold text-slate-900 dark:text-white">Jorge Faktura</span>
+          <button
+            onClick={() => setDark(!dark)}
+            className="ml-auto w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            aria-label="Dark mode umschalten"
+          >
+            {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
         </div>
         <nav className="flex-1 p-3 overflow-y-auto">
           {desktopNav.map(({ to, label, icon: Icon }) => (
@@ -58,8 +68,8 @@ export default function AppLayout() {
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium mb-0.5 transition-colors ${
                   isActive
-                    ? 'bg-brand-50 text-brand-700'
-                    : 'text-slate-600 hover:bg-slate-50'
+                    ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-400'
+                    : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800'
                 }`
               }
             >
@@ -69,12 +79,12 @@ export default function AppLayout() {
           ))}
         </nav>
         {/* Profile section */}
-        <div className="p-3 border-t border-slate-100">
+        <div className="p-3 border-t border-slate-100 dark:border-slate-700">
           {/* Current profile + switcher */}
           <div className="relative mb-1">
             <button
               onClick={() => setProfileMenuOpen((o) => !o)}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-slate-50 transition-colors text-left"
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left"
             >
               {profile?.logo ? (
                 <img src={profile.logo} alt="" className="w-7 h-7 rounded-lg object-contain flex-shrink-0" />
@@ -89,12 +99,12 @@ export default function AppLayout() {
             {profileMenuOpen && profiles.length > 1 && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setProfileMenuOpen(false)} />
-                <div className="absolute bottom-full left-0 right-0 mb-1 z-20 bg-white rounded-xl shadow-lg border border-slate-100 py-1">
+                <div className="absolute bottom-full left-0 right-0 mb-1 z-20 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-100 dark:border-slate-700 py-1">
                   {profiles.filter((p) => p.id !== loggedInProfileId).map((p) => (
                     <button
                       key={p.id}
                       onClick={() => { switchProfile(p.id); setProfileMenuOpen(false); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 text-left"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 text-left"
                     >
                       {p.logo ? (
                         <img src={p.logo} alt="" className="w-6 h-6 rounded-md object-contain flex-shrink-0" />
@@ -112,7 +122,7 @@ export default function AppLayout() {
           </div>
           <button
             onClick={() => logout()}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-900/30 dark:hover:text-red-400 transition-colors"
           >
             <LogOut className="w-5 h-5" />
             Abmelden
@@ -127,7 +137,7 @@ export default function AppLayout() {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 md:ml-60 pt-14 md:pt-0 pb-20 md:pb-0 min-h-screen">
+      <main className="flex-1 md:ml-60 pt-14 md:pt-0 pb-20 md:pb-0 min-h-screen dark:bg-slate-950">
         <div className="max-w-5xl mx-auto p-4 md:p-8">
           <Outlet />
         </div>

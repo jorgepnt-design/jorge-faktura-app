@@ -24,7 +24,7 @@ const navItems = [
 
 export default function BottomNav() {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 safe-bottom md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 safe-bottom md:hidden">
       <div className="flex items-stretch overflow-x-auto scrollbar-none">
         {navItems.map(({ to, label, icon: Icon }) => (
           <NavLink
@@ -35,7 +35,7 @@ export default function BottomNav() {
               `flex-1 min-w-[52px] flex flex-col items-center justify-center gap-0.5 py-2 px-1 transition-colors ${
                 isActive
                   ? 'text-brand-600'
-                  : 'text-slate-400 hover:text-slate-600'
+                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
               }`
             }
           >

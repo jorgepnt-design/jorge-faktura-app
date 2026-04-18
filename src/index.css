@@ -20,6 +20,13 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overscroll-behavior-y: none;
+    color-scheme: light;
+  }
+
+  .dark body {
+    background-color: #0f172a;
+    color: #f1f5f9;
+    color-scheme: dark;
   }
 
   /* iOS safe area support */
@@ -64,6 +71,74 @@
   .bg-brand-gradient {
     background: linear-gradient(135deg, #2563eb, #1d4ed8);
   }
+}
+
+@layer utilities {
+  /* Dark mode global overrides — high-specificity so they win over component defaults */
+
+  .dark .bg-white {
+    background-color: #1e293b;
+  }
+  .dark .bg-slate-50 {
+    background-color: #0f172a;
+  }
+  .dark .bg-slate-100 {
+    background-color: #1e293b;
+  }
+
+  .dark .border-slate-100 {
+    border-color: #334155;
+  }
+  .dark .border-slate-200 {
+    border-color: #334155;
+  }
+  .dark .border-slate-300 {
+    border-color: #334155;
+  }
+
+  .dark .text-slate-900 {
+    color: #f8fafc;
+  }
+  .dark .text-slate-800 {
+    color: #f1f5f9;
+  }
+  .dark .text-slate-700 {
+    color: #e2e8f0;
+  }
+  .dark .text-slate-600 {
+    color: #cbd5e1;
+  }
+  .dark .text-slate-500 {
+    color: #94a3b8;
+  }
+
+  .dark .hover\:bg-slate-50:hover {
+    background-color: #334155;
+  }
+  .dark .hover\:bg-slate-100:hover {
+    background-color: #334155;
+  }
+
+  /* Input / textarea / select dark overrides */
+  .dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  .dark textarea,
+  .dark select {
+    background-color: #1e293b;
+    border-color: #475569;
+    color: #f1f5f9;
+  }
+  .dark input::placeholder,
+  .dark textarea::placeholder {
+    color: #64748b;
+  }
+  .dark input:disabled,
+  .dark textarea:disabled,
+  .dark select:disabled {
+    background-color: #0f172a;
+    color: #475569;
+  }
+
+  /* Shadow-sm is fine as-is in dark mode */
 }
 
 /* Print styles for PDF-like printing */

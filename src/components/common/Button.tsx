@@ -10,10 +10,10 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses = {
   primary: 'bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800 shadow-sm',
-  secondary: 'bg-slate-100 text-slate-700 hover:bg-slate-200 active:bg-slate-300',
-  danger: 'bg-red-50 text-red-600 hover:bg-red-100 active:bg-red-200',
-  ghost: 'text-slate-600 hover:bg-slate-100 active:bg-slate-200',
-  outline: 'border border-slate-300 text-slate-700 hover:bg-slate-50 bg-white',
+  secondary: 'bg-slate-100 text-slate-700 hover:bg-slate-200 active:bg-slate-300 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600',
+  danger: 'bg-red-50 text-red-600 hover:bg-red-100 active:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50',
+  ghost: 'text-slate-600 hover:bg-slate-100 active:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700',
+  outline: 'border border-slate-300 text-slate-700 hover:bg-slate-50 bg-white dark:border-slate-600 dark:text-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700',
 };
 
 const sizeClasses = {

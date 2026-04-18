@@ -40,14 +40,14 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', f
 
       {/* Dialog */}
       <div
-        className={`relative bg-white w-full ${sizeClasses[size]} rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[85vh]`}
+        className={`relative bg-white dark:bg-slate-800 w-full ${sizeClasses[size]} rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[85vh]`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-slate-100 flex-shrink-0">
-          <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+        <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-700 flex-shrink-0">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{title}</h2>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-400 transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -58,7 +58,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', f
 
         {/* Footer */}
         {footer && (
-          <div className="p-5 border-t border-slate-100 flex-shrink-0 bg-slate-50 rounded-b-2xl">
+          <div className="p-5 border-t border-slate-100 dark:border-slate-700 flex-shrink-0 bg-slate-50 dark:bg-slate-900 rounded-b-2xl">
             {footer}
           </div>
         )}
