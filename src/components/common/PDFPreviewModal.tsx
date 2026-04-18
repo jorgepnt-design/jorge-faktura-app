@@ -13,8 +13,8 @@ export default function PDFPreviewModal({ blobUrl, title, onClose, onDownload }:
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-slate-900/80 backdrop-blur-sm">
-      <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-slate-200 flex-shrink-0">
-        <h2 className="font-semibold text-slate-800 truncate mr-4">{title}</h2>
+      <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex-shrink-0">
+        <h2 className="font-semibold text-slate-800 dark:text-white truncate mr-4">{title}</h2>
         <div className="flex items-center gap-2 flex-shrink-0">
           <button
             onClick={onDownload}

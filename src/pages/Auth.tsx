@@ -89,7 +89,7 @@ export default function Auth() {
           <img src="/logo.png" alt="Jorge Faktura" className="w-24 h-24 mx-auto mb-4 drop-shadow-xl" />
         </div>
 
-        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden">
 
           {/* ── Login ────────────────────────────────────────────────────────── */}
           {step === 'login' && (
