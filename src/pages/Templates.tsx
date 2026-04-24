@@ -10,7 +10,7 @@ import ConfirmDialog from '../components/common/ConfirmDialog';
 import EmptyState from '../components/common/EmptyState';
 import { FormField, Input, Textarea, Select } from '../components/common/FormField';
 import { Template, TemplateType, Attachment } from '../types';
-import { getTemplateTypeLabel, downloadBlob } from '../utils/helpers';
+import { getTemplateTypeLabel, downloadBlob, shareFileNative } from '../utils/helpers';
 
 type PageTab = 'vorlagen' | 'anlagen';
 
@@ -284,15 +284,13 @@ function AnlagenTab() {
       });
   };
 
-  const handleShareEmail = (att: Attachment) => {
-    const subject = encodeURIComponent(`Anlage: ${att.name}`);
-    const body = encodeURIComponent(`Anbei die Datei: ${att.name}\n\nBitte laden Sie die Datei hier herunter oder fragen Sie beim Absender nach.`);
-    window.location.href = `mailto:${shareEmail}?subject=${subject}&body=${body}`;
-  };
-
-  const handleShareWhatsApp = (att: Attachment) => {
-    const msg = encodeURIComponent(`Anlage: ${att.name}\n\nBitte fragen Sie beim Absender nach der Datei.`);
-    window.open(`https://wa.me/?text=${msg}`, '_blank');
+  const handleShareNative = (att: Attachment) => {
+    fetch(att.data)
+      .then((r) => r.blob())
+      .then((blob) => shareFileNative(new Blob([blob], { type: att.mimeType || blob.type }), att.name))
+      .then((handled) => {
+        if (!handled) alert('Teilen wird auf diesem Gerät nicht unterstützt. Bitte laden Sie die Datei herunter.');
+      });
   };
 
   return (
@@ -370,41 +368,21 @@ function AnlagenTab() {
         {shareItem && (
           <div className="space-y-3">
             <button
-              onClick={() => handleDownload(shareItem)}
+              onClick={() => handleShareNative(shareItem)}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-brand-600 text-white font-medium hover:bg-brand-700 transition-colors"
             >
-              <Download className="w-5 h-5" />
-              PDF/Datei herunterladen
+              <MessageCircle className="w-5 h-5" />
+              Teilen (WhatsApp, Mail, AirDrop …)
             </button>
-
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-slate-600">Per E-Mail (optional: Empfänger eingeben)</p>
-              <input
-                type="email"
-                value={shareEmail}
-                onChange={(e) => setShareEmail(e.target.value)}
-                placeholder="empfaenger@email.de"
-                className="w-full h-10 px-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-              />
-              <button
-                onClick={() => handleShareEmail(shareItem)}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition-colors"
-              >
-                <Mail className="w-5 h-5 text-blue-500" />
-                Per E-Mail senden
-              </button>
-            </div>
-
             <button
-              onClick={() => handleShareWhatsApp(shareItem)}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition-colors"
+              onClick={() => handleDownload(shareItem)}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl border border-slate-200 text-slate-700 dark:border-slate-600 dark:text-slate-200 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
             >
-              <MessageCircle className="w-5 h-5 text-green-500" />
-              Per WhatsApp teilen
+              <Download className="w-5 h-5" />
+              Herunterladen / In Dateien sichern
             </button>
-
             <p className="text-xs text-slate-400 text-center">
-              Datei herunterladen, dann manuell in WhatsApp/E-Mail anhängen
+              "Teilen" öffnet das Systemmenü — die Datei wird direkt angehängt
             </p>
           </div>
         )}
