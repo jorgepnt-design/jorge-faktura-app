@@ -11,6 +11,7 @@ import Modal from '../components/common/Modal';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import { FormField, Input, Textarea, Select } from '../components/common/FormField';
 import { Profile } from '../types';
+import { downloadBlob } from '../utils/helpers';
 
 type Tab = 'profil' | 'artikel' | 'datenrettung';
 
@@ -502,12 +503,7 @@ function DatenrettungTab() {
   const handleExport = () => {
     const data = exportData();
     const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `jorge-faktura-backup-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `jorge-faktura-backup-${new Date().toISOString().split('T')[0]}.json`);
   };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -526,12 +522,7 @@ function DatenrettungTab() {
   const handleShareExport = () => {
     const data = exportSharedData(shareOpts);
     const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `jorge-faktura-freigabe-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `jorge-faktura-freigabe-${new Date().toISOString().split('T')[0]}.json`);
   };
 
   const handleShareImport = (e: React.ChangeEvent<HTMLInputElement>) => {

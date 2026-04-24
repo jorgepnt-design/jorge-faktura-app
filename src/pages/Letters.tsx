@@ -10,7 +10,7 @@ import TemplateTextSelector from '../components/templates/TemplateTextSelector';
 import ShareModal from '../components/common/ShareModal';
 import PDFPreviewModal from '../components/common/PDFPreviewModal';
 import { Letter } from '../types';
-import { formatDate, formatCurrency, todayISO } from '../utils/helpers';
+import { formatDate, formatCurrency, todayISO, downloadBlob } from '../utils/helpers';
 import { generateLetterPDF, getLetterPdfBlob } from '../utils/pdf';
 
 type LetterFormData = Omit<Letter, 'id' | 'createdAt' | 'updatedAt'>;
@@ -282,7 +282,7 @@ export default function Letters() {
         blobUrl={previewBlobUrl}
         title={previewTitle}
         onClose={() => { if (previewBlobUrl) URL.revokeObjectURL(previewBlobUrl); setPreviewBlobUrl(null); }}
-        onDownload={() => { if (previewBlobUrl) { const a = document.createElement('a'); a.href = previewBlobUrl; a.download = `${previewTitle}.pdf`; a.click(); } }}
+        onDownload={async () => { if (previewBlobUrl) { const res = await fetch(previewBlobUrl); await downloadBlob(await res.blob(), `${previewTitle}.pdf`); } }}
       />
 
       {/* Share modal */}

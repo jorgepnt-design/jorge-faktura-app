@@ -10,7 +10,7 @@ import ConfirmDialog from '../components/common/ConfirmDialog';
 import EmptyState from '../components/common/EmptyState';
 import { FormField, Input, Textarea, Select } from '../components/common/FormField';
 import { Template, TemplateType, Attachment } from '../types';
-import { getTemplateTypeLabel } from '../utils/helpers';
+import { getTemplateTypeLabel, downloadBlob } from '../utils/helpers';
 
 type PageTab = 'vorlagen' | 'anlagen';
 
@@ -271,10 +271,17 @@ function AnlagenTab() {
   };
 
   const handleDownload = (att: Attachment) => {
-    const a = document.createElement('a');
-    a.href = att.data;
-    a.download = att.name;
-    a.click();
+    fetch(att.data)
+      .then((r) => r.blob())
+      .then((blob) => downloadBlob(new Blob([blob], { type: att.mimeType || blob.type }), att.name))
+      .catch(() => {
+        const a = document.createElement('a');
+        a.href = att.data;
+        a.download = att.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      });
   };
 
   const handleShareEmail = (att: Attachment) => {

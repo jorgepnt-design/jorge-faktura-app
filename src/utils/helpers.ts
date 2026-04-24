@@ -109,3 +109,29 @@ export function getTemplateTypeLabel(type: string): string {
   };
   return map[type] || type;
 }
+
+/**
+ * Download a Blob as a file.
+ * On iOS PWA, a.download is silently ignored — uses Web Share API instead
+ * so the user gets the iOS share sheet with "Save to Files".
+ */
+export async function downloadBlob(blob: Blob, filename: string): Promise<void> {
+  const file = new File([blob], filename, { type: blob.type });
+  if (typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: filename });
+      return;
+    } catch (e) {
+      if ((e as DOMException).name === 'AbortError') return; // user cancelled
+      // other error → fall through to anchor download
+    }
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}

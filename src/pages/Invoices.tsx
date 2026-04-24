@@ -17,7 +17,7 @@ import TemplateTextSelector from '../components/templates/TemplateTextSelector';
 import { Invoice, InvoiceItem, InvoiceStatus, Receipt, PaymentMethod } from '../types';
 import {
   formatCurrency, formatDate, getStatusColor, getStatusLabel,
-  calculateLineItem, calculateInvoiceTotals, todayISO, generateId,
+  calculateLineItem, calculateInvoiceTotals, todayISO, generateId, downloadBlob,
 } from '../utils/helpers';
 import { generateInvoicePDF, getInvoicePdfBlob, generateReceiptPDF, getReceiptPdfBlob } from '../utils/pdf';
 
@@ -751,7 +751,7 @@ export default function Invoices() {
         blobUrl={previewBlobUrl}
         title={previewTitle}
         onClose={() => { if (previewBlobUrl) URL.revokeObjectURL(previewBlobUrl); setPreviewBlobUrl(null); }}
-        onDownload={() => { if (previewBlobUrl) { const a = document.createElement('a'); a.href = previewBlobUrl; a.download = `${previewTitle}.pdf`; a.click(); } }}
+        onDownload={async () => { if (previewBlobUrl) { const res = await fetch(previewBlobUrl); await downloadBlob(await res.blob(), `${previewTitle}.pdf`); } }}
       />
 
       {/* Share modal */}

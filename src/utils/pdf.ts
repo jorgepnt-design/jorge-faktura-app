@@ -814,56 +814,50 @@ function buildReceiptDoc(receipt: Receipt, profile: Profile): jsPDF {
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
-export function generateInvoicePDF(
-  invoice: Invoice,
-  profile: Profile,
-  customer: Customer | null,
-): void {
-  buildInvoiceDoc(invoice, profile, customer).save(`${invoice.invoiceNumber}.pdf`);
+import { downloadBlob } from './helpers';
+
+export async function generateInvoicePDF(
+  invoice: Invoice, profile: Profile, customer: Customer | null,
+): Promise<void> {
+  const blob = buildInvoiceDoc(invoice, profile, customer).output('blob');
+  await downloadBlob(blob, `${invoice.invoiceNumber}.pdf`);
 }
 
 export function getInvoicePdfBlob(
-  invoice: Invoice,
-  profile: Profile,
-  customer: Customer | null,
+  invoice: Invoice, profile: Profile, customer: Customer | null,
 ): Blob {
   return buildInvoiceDoc(invoice, profile, customer).output('blob');
 }
 
-export function generateDeliveryNotePDF(
-  note: DeliveryNote,
-  profile: Profile,
-  customer: Customer | null,
-): void {
-  buildDeliveryNoteDoc(note, profile, customer).save(`${note.deliveryNoteNumber}.pdf`);
+export async function generateDeliveryNotePDF(
+  note: DeliveryNote, profile: Profile, customer: Customer | null,
+): Promise<void> {
+  const blob = buildDeliveryNoteDoc(note, profile, customer).output('blob');
+  await downloadBlob(blob, `${note.deliveryNoteNumber}.pdf`);
 }
 
 export function getDeliveryNotePdfBlob(
-  dn: DeliveryNote,
-  profile: Profile,
-  customer: Customer | null,
+  dn: DeliveryNote, profile: Profile, customer: Customer | null,
 ): Blob {
   return buildDeliveryNoteDoc(dn, profile, customer).output('blob');
 }
 
-export function generateLetterPDF(
-  letter: Letter,
-  profile: Profile,
-  customer: Customer | null,
-): void {
-  buildLetterDoc(letter, profile, customer).save(`${letter.title || 'Schreiben'}.pdf`);
+export async function generateLetterPDF(
+  letter: Letter, profile: Profile, customer: Customer | null,
+): Promise<void> {
+  const blob = buildLetterDoc(letter, profile, customer).output('blob');
+  await downloadBlob(blob, `${letter.title || 'Schreiben'}.pdf`);
 }
 
 export function getLetterPdfBlob(
-  letter: Letter,
-  profile: Profile,
-  customer: Customer | null,
+  letter: Letter, profile: Profile, customer: Customer | null,
 ): Blob {
   return buildLetterDoc(letter, profile, customer).output('blob');
 }
 
-export function generateReceiptPDF(receipt: Receipt, profile: Profile): void {
-  buildReceiptDoc(receipt, profile).save(`Quittung-${receipt.receiptNumber}.pdf`);
+export async function generateReceiptPDF(receipt: Receipt, profile: Profile): Promise<void> {
+  const blob = buildReceiptDoc(receipt, profile).output('blob');
+  await downloadBlob(blob, `Quittung-${receipt.receiptNumber}.pdf`);
 }
 
 export function getReceiptPdfBlob(receipt: Receipt, profile: Profile): Blob {

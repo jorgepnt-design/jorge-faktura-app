@@ -15,7 +15,7 @@ import PDFPreviewModal from '../components/common/PDFPreviewModal';
 import { DeliveryNote, DeliveryNoteItem, DeliveryNoteStatus } from '../types';
 import {
   formatCurrency, formatDate, getStatusColor, getStatusLabel,
-  generateId, todayISO, calculateLineItem, calculateInvoiceTotals,
+  generateId, todayISO, calculateLineItem, calculateInvoiceTotals, downloadBlob,
 } from '../utils/helpers';
 import { generateDeliveryNotePDF, getDeliveryNotePdfBlob } from '../utils/pdf';
 
@@ -544,7 +544,7 @@ export default function DeliveryNotes() {
         blobUrl={previewBlobUrl}
         title={previewTitle}
         onClose={() => { if (previewBlobUrl) URL.revokeObjectURL(previewBlobUrl); setPreviewBlobUrl(null); }}
-        onDownload={() => { if (previewBlobUrl) { const a = document.createElement('a'); a.href = previewBlobUrl; a.download = `${previewTitle}.pdf`; a.click(); } }}
+        onDownload={async () => { if (previewBlobUrl) { const res = await fetch(previewBlobUrl); await downloadBlob(await res.blob(), `${previewTitle}.pdf`); } }}
       />
 
       {/* Share modal */}
