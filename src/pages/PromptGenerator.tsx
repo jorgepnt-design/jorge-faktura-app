@@ -4,8 +4,10 @@ import {
   RotateCcw, Sparkles, Zap, User, Target, Users, MessageSquare,
   Palette, FileOutput, Globe, Languages, AlignLeft, Maximize2,
   Mic, Instagram, Youtube, Mail, HelpCircle, BookOpen, Code2,
-  Megaphone, Trash2, ChevronDown, X, GraduationCap,
+  Megaphone, Trash2, ChevronDown, X, GraduationCap, Home,
+  FileDown, FileText, Presentation, Briefcase,
 } from 'lucide-react';
+import jsPDF from 'jspdf';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -41,6 +43,7 @@ const ROLES = [
   { value: 'entwickler', label: 'Entwickler', icon: Code2 },
   { value: 'copywriter', label: 'Copywriter', icon: MessageSquare },
   { value: 'berater', label: 'Berater', icon: User },
+  { value: 'makler', label: 'Makler', icon: Home },
   { value: 'wissenschaftler', label: 'Wissenschaftler', icon: BookOpen },
   { value: 'journalist', label: 'Journalist', icon: AlignLeft },
   { value: 'coach', label: 'Coach / Mentor', icon: Sparkles },
@@ -87,6 +90,9 @@ const OUTPUT_TYPES = [
   { value: 'zusammenfassung', label: 'Zusammenfassung', desc: 'Kompakter Überblick', icon: AlignLeft },
   { value: 'bildungsinhalt', label: 'Bildungsinhalt', desc: 'Lernmaterialien & Kurse', icon: GraduationCap },
   { value: 'technisch', label: 'Technische Erklärung', desc: 'Dokumentation & Guides', icon: Code2 },
+  { value: 'pdf', label: 'PDF-Dokument', desc: 'Download als PDF', icon: FileDown },
+  { value: 'docx', label: 'Word-Dokument', desc: 'Download als .docx', icon: FileText },
+  { value: 'praesentation', label: 'Präsentation', desc: 'Folien / PowerPoint', icon: Presentation },
 ];
 
 const FORMATS = [
@@ -153,6 +159,30 @@ const QUICK_TEMPLATES = [
       language: 'Deutsch', translateToEnglish: false, format: 'schritt-fuer-schritt', length: 'ausführlich',
     },
   },
+  {
+    id: 'expose',
+    label: 'Exposé',
+    icon: Home,
+    color: 'from-amber-500 to-orange-500',
+    state: {
+      role: 'makler', customRole: '', goal: 'überzeugen',
+      audience: 'kunden', customAudience: '', topic: '',
+      style: 'professionell', tone: 'formell', outputType: 'pdf',
+      language: 'Deutsch', translateToEnglish: false, format: 'text', length: 'ausführlich',
+    },
+  },
+  {
+    id: 'angebot',
+    label: 'Angebot',
+    icon: Briefcase,
+    color: 'from-slate-600 to-slate-800',
+    state: {
+      role: 'berater', customRole: '', goal: 'überzeugen',
+      audience: 'kunden', customAudience: '', topic: '',
+      style: 'professionell', tone: 'formell', outputType: 'docx',
+      language: 'Deutsch', translateToEnglish: false, format: 'schritt-fuer-schritt', length: 'ausführlich',
+    },
+  },
 ];
 
 // ─── Prompt Generator ────────────────────────────────────────────────────────
@@ -166,6 +196,15 @@ function generatePrompt(s: WizardState): string {
   const formatLabel = FORMATS.find(f => f.value === s.format)?.label ?? s.format;
   const lengthLabel = LENGTHS.find(l => l.value === s.length)?.label ?? s.length;
   const toneLabel = s.tone === 'formell' ? 'formell' : 'informell';
+
+  const docHint =
+    s.outputType === 'pdf'
+      ? '\nHinweis: Strukturiere den Inhalt so, dass er direkt als PDF-Dokument formatiert werden kann (klare Überschriften, Abschnitte, professionelles Layout).'
+      : s.outputType === 'docx'
+      ? '\nHinweis: Strukturiere den Inhalt als Word-Dokument mit Überschriften (H1/H2/H3), Absätzen und ggf. Tabellen.'
+      : s.outputType === 'praesentation'
+      ? '\nHinweis: Strukturiere den Inhalt als Präsentation mit einzelnen Folien. Jede Folie enthält einen Titel und 3–5 Stichpunkte. Beginne jede Folie mit „## Folie X:".'
+      : '';
 
   if (s.language === 'Englisch' || s.translateToEnglish) {
     return `You are a ${roleLabel}.
@@ -181,7 +220,7 @@ Answer format: ${formatLabel}
 Length / detail: ${lengthLabel}
 
 Expected output:
-Please create a well-structured ${outputLabel.toLowerCase()} that clearly and effectively addresses the topic for the target audience. Use a ${styleLabel.toLowerCase()} and ${toneLabel} tone throughout.`;
+Please create a well-structured ${outputLabel.toLowerCase()} that clearly and effectively addresses the topic for the target audience. Use a ${styleLabel.toLowerCase()} and ${toneLabel} tone throughout.${docHint}`;
   }
 
   return `Du bist ein ${roleLabel}.
@@ -197,7 +236,7 @@ Antwortformat: ${formatLabel}
 Länge / Detailgrad: ${lengthLabel}
 
 Erwartete Ausgabe:
-Erstelle einen klar strukturierten ${outputLabel.toLowerCase()}, der das Thema für die Zielgruppe verständlich und wirkungsvoll aufbereitet. Verwende dabei einen ${styleLabel.toLowerCase()}en, ${toneLabel}en Ton.`;
+Erstelle einen klar strukturierten ${outputLabel.toLowerCase()}, der das Thema für die Zielgruppe verständlich und wirkungsvoll aufbereitet. Verwende dabei einen ${styleLabel.toLowerCase()}en, ${toneLabel}en Ton.${docHint}`;
 }
 
 // ─── Sub-Components ───────────────────────────────────────────────────────────
@@ -324,12 +363,55 @@ export default function PromptGenerator() {
   }
 
   function handleDownload() {
+    const filename = `prompt-${Date.now()}`;
+
+    if (state.outputType === 'pdf') {
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const margin = 20;
+      const pageW = doc.internal.pageSize.getWidth() - margin * 2;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
+      const lines = doc.splitTextToSize(generatedPrompt, pageW);
+      let y = margin;
+      lines.forEach((line: string) => {
+        if (y > doc.internal.pageSize.getHeight() - margin) {
+          doc.addPage();
+          y = margin;
+        }
+        doc.text(line, margin, y);
+        y += 6;
+      });
+      doc.save(`${filename}.pdf`);
+      return;
+    }
+
+    if (state.outputType === 'docx') {
+      const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head><meta charset='utf-8'><title>Prompt</title>
+<style>body{font-family:Calibri,sans-serif;font-size:11pt;line-height:1.6;margin:2cm;}</style>
+</head><body><pre style="font-family:Calibri,sans-serif;font-size:11pt;white-space:pre-wrap;">${generatedPrompt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre></body></html>`;
+      const blob = new Blob([html], { type: 'application/msword' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `${filename}.doc`; a.click();
+      URL.revokeObjectURL(url);
+      return;
+    }
+
+    if (state.outputType === 'praesentation') {
+      const blob = new Blob([generatedPrompt], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `${filename}-praesentation.txt`; a.click();
+      URL.revokeObjectURL(url);
+      return;
+    }
+
+    // Default: plain text
     const blob = new Blob([generatedPrompt], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = `prompt-${Date.now()}.txt`;
-    a.click();
+    a.href = url; a.download = `${filename}.txt`; a.click();
     URL.revokeObjectURL(url);
   }
 
@@ -748,7 +830,7 @@ export default function PromptGenerator() {
                 className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-brand-400 hover:text-brand-600 bg-white dark:bg-slate-800 transition-all text-xs font-medium"
               >
                 <Download className="w-4 h-4" />
-                Download
+                {state.outputType === 'pdf' ? 'PDF' : state.outputType === 'docx' ? 'Word' : state.outputType === 'praesentation' ? 'Folien' : 'Download'}
               </button>
               <button
                 onClick={() => { setSaveName(''); setSaveModalOpen(true); }}
