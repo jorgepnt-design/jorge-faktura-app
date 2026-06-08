@@ -12,6 +12,7 @@ import Articles from './pages/Articles';
 import Letters from './pages/Letters';
 import Templates from './pages/Templates';
 import Settings from './pages/Settings';
+import PromptGenerator from './pages/PromptGenerator';
 import { isSupabaseConfigured } from './lib/supabase';
 
 function AppRoutes() {
@@ -61,6 +62,7 @@ function AppRoutes() {
         <Route path="schreiben" element={<Letters />} />
         <Route path="vorlagen" element={<Templates />} />
         <Route path="einstellungen" element={<Settings />} />
+        <Route path="prompt-generator" element={<PromptGenerator />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

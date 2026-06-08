@@ -9,6 +9,7 @@ import {
   PenLine,
   LayoutTemplate,
   Settings,
+  Wand2,
 } from 'lucide-react';
 
 const navItems = [
@@ -19,6 +20,7 @@ const navItems = [
   { to: '/artikel', label: 'Artikel', icon: Package },
   { to: '/schreiben', label: 'Schreiben', icon: PenLine },
   { to: '/vorlagen', label: 'Vorlagen', icon: LayoutTemplate },
+  { to: '/prompt-generator', label: 'Prompts', icon: Wand2 },
   { to: '/einstellungen', label: 'Einstellungen', icon: Settings },
 ];
 
