@@ -5,7 +5,7 @@ import BottomNav from './BottomNav';
 import Sidebar from './Sidebar';
 import {
   LayoutDashboard, Users, FileText, Truck, PenLine, LayoutTemplate, Settings, LogOut, ChevronDown,
-  Sun, Moon
+  Sun, Moon, Wand2,
 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { useDarkMode } from '../../hooks/useDarkMode';
@@ -18,6 +18,7 @@ const routeTitles: Record<string, string> = {
   '/schreiben': 'Schreiben',
   '/vorlagen': 'Vorlagen',
   '/einstellungen': 'Einstellungen',
+  '/prompt-generator': 'Prompt Generator',
 };
 
 const desktopNav = [
@@ -27,6 +28,7 @@ const desktopNav = [
   { to: '/lieferscheine', label: 'Lieferscheine', icon: Truck },
   { to: '/schreiben', label: 'Schreiben', icon: PenLine },
   { to: '/vorlagen', label: 'Vorlagen', icon: LayoutTemplate },
+  { to: '/prompt-generator', label: 'Prompt Generator', icon: Wand2 },
   { to: '/einstellungen', label: 'Einstellungen', icon: Settings },
 ];
 
