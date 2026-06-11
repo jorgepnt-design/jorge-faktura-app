@@ -20,9 +20,9 @@ export default function Card({ children, className = '', onClick, padding = 'md'
     <Tag
       onClick={onClick}
       className={`
-        bg-white rounded-2xl shadow-sm border border-slate-100
+        bg-white rounded-2xl shadow-card border border-slate-100
         ${paddingClasses[padding]}
-        ${onClick ? 'cursor-pointer hover:shadow-md hover:border-slate-200 transition-all active:scale-[0.99] w-full text-left' : ''}
+        ${onClick ? 'cursor-pointer hover:shadow-card-hover hover:border-slate-200 transition-all active:scale-[0.99] w-full text-left' : ''}
         ${className}
       `}
     >
@@ -47,7 +47,7 @@ export function StatCard({ label, value, icon, color = 'text-brand-600 bg-brand-
           {icon}
         </div>
         <div className="min-w-0">
-          <p className="text-2xl font-bold text-slate-900 leading-none">{value}</p>
+          <p className="num text-2xl font-bold text-slate-900 leading-none">{value}</p>
           <p className="text-xs text-slate-500 mt-0.5">{label}</p>
         </div>
       </div>

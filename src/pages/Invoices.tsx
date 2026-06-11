@@ -239,7 +239,7 @@ export default function Invoices() {
     setShareBlobUrl(url);
     setShareFilename(`Rechnung-${invoice.invoiceNumber}.pdf`);
     setShareSubject(`Rechnung ${invoice.invoiceNumber}${cname ? ` – ${cname}` : ''}`);
-    setShareBody(`Sehr geehrte Damen und Herren,\n\nerbei finden Sie die Rechnung ${invoice.invoiceNumber} über ${formatCurrency(invoice.grossTotal)}.\n\nMit freundlichen Grüßen\n${profile.personName || profile.companyName}`);
+    setShareBody(`Sehr geehrte Damen und Herren,\n\nanbei finden Sie die Rechnung ${invoice.invoiceNumber} über ${formatCurrency(invoice.grossTotal)}.\n\nMit freundlichen Grüßen\n${profile.personName || profile.companyName}`);
     setShareEmail(customer?.email || '');
   };
 
@@ -438,7 +438,7 @@ export default function Invoices() {
                         {invoice && <p className="text-xs text-slate-400">Rechnung: {invoice.invoiceNumber}</p>}
                       </div>
                       <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                        <span className="font-bold text-slate-900">{formatCurrency(r.amount)}</span>
+                        <span className="num font-bold text-slate-900">{formatCurrency(r.amount)}</span>
                         <span className="text-xs text-slate-400">{formatDate(r.date)}</span>
                       </div>
                     </div>
@@ -702,7 +702,7 @@ export default function Invoices() {
                 ))}
                 <div className="pt-2 border-t border-brand-200 flex justify-between font-bold text-base text-slate-900">
                   <span>Gesamtbetrag</span>
-                  <span className="text-brand-700">{formatCurrency(form.grossTotal)}</span>
+                  <span className="num text-brand-700">{formatCurrency(form.grossTotal)}</span>
                 </div>
               </div>
             </div>
@@ -902,7 +902,7 @@ function InvoiceCard({
           </div>
           <div className="flex items-center justify-between mt-2">
             <span className="text-xs text-slate-400">{formatDate(invoice.invoiceDate)}</span>
-            <span className="text-sm font-bold text-slate-900">{formatCurrency(invoice.grossTotal)}</span>
+            <span className="num text-sm font-bold text-slate-900">{formatCurrency(invoice.grossTotal)}</span>
           </div>
         </div>
       </div>

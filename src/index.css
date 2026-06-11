@@ -57,7 +57,7 @@
 
   /* Focus visible improvements */
   :focus-visible {
-    outline: 2px solid #2563eb;
+    outline: 2px solid #2b5d99;
     outline-offset: 2px;
   }
 
@@ -65,11 +65,24 @@
     appearance: none;
     -webkit-appearance: none;
   }
+
+  /* iPhone: verhindert Auto-Zoom beim Fokussieren von Eingabefeldern (<16px) */
+  @media (max-width: 639px) {
+    input, textarea, select {
+      font-size: 16px !important;
+    }
+  }
+
+  /* Beträge & Zahlenkolonnen: gleichbreite Ziffern für saubere Ausrichtung */
+  .num {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
 }
 
 @layer utilities {
   .bg-brand-gradient {
-    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    background: linear-gradient(135deg, #2b5d99, #1e3557);
   }
 }
 
@@ -152,14 +165,15 @@
   }
 }
 
-/* Smooth transitions */
-* {
-  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
-}
-
-/* Override transition for elements that shouldn't transition */
+/* Eingabefelder: nur Border/Schatten animieren */
 input, textarea, select {
   transition: border-color 150ms, box-shadow 150ms;
+}
+
+/* Reduzierte Bewegung respektieren */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

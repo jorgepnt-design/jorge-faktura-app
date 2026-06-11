@@ -111,12 +111,15 @@ export default function Dashboard() {
       </div>
 
       <section className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-        <div className="lg:col-span-2 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-600 to-brand-800 p-5 text-white shadow-sm">
+        <div className="lg:col-span-2 rounded-2xl bg-gradient-to-br from-brand-800 to-brand-950 p-5 text-white shadow-card">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-brand-100">Umsatz diesen Monat</p>
-              <p className="mt-2 text-3xl font-bold tracking-tight">{formatCurrency(metrics.monthRevenue)}</p>
-              <p className="mt-2 text-sm text-brand-100">
+              <p className="flex items-center gap-2 text-sm font-medium text-brand-200">
+                <span className="inline-block w-5 h-px bg-gold-400" aria-hidden="true" />
+                Umsatz diesen Monat
+              </p>
+              <p className="num mt-2 text-3xl font-bold tracking-tight">{formatCurrency(metrics.monthRevenue)}</p>
+              <p className="num mt-2 text-sm text-brand-200">
                 Insgesamt bezahlt: {formatCurrency(metrics.paidRevenue)}
               </p>
             </div>
@@ -126,12 +129,12 @@ export default function Dashboard() {
           </div>
           <div className="mt-5 grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-white/10 p-3">
-              <p className="text-xs text-brand-100">Offen</p>
-              <p className="mt-1 font-semibold">{formatCurrency(metrics.openRevenue)}</p>
+              <p className="text-xs text-brand-200">Offen</p>
+              <p className="num mt-1 font-semibold">{formatCurrency(metrics.openRevenue)}</p>
             </div>
             <div className="rounded-xl bg-white/10 p-3">
-              <p className="text-xs text-brand-100">Abschlussquote</p>
-              <p className="mt-1 font-semibold">{metrics.completionRate}% bezahlt</p>
+              <p className="text-xs text-brand-200">Abschlussquote</p>
+              <p className="num mt-1 font-semibold">{metrics.completionRate}% bezahlt</p>
             </div>
           </div>
         </div>
@@ -143,7 +146,7 @@ export default function Dashboard() {
             </div>
             <div>
               <p className="text-sm font-medium text-slate-500">Überfällig</p>
-              <p className="text-2xl font-bold text-slate-900">{formatCurrency(metrics.overdueRevenue)}</p>
+              <p className="num text-2xl font-bold text-slate-900">{formatCurrency(metrics.overdueRevenue)}</p>
             </div>
           </div>
           <p className="mt-4 text-sm text-slate-500">

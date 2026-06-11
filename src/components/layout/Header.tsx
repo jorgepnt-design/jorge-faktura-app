@@ -23,7 +23,7 @@ export default function Header({ title, onMenuOpen }: HeaderProps) {
         <Menu className="w-6 h-6 text-slate-700 dark:text-slate-300" />
       </button>
 
-      <h1 className="text-base font-semibold text-slate-900 dark:text-white truncate max-w-[140px] text-center">
+      <h1 className="text-base font-semibold text-slate-900 dark:text-white truncate flex-1 text-center mx-2">
         {title}
       </h1>
 

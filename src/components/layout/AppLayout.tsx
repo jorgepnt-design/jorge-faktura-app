@@ -4,8 +4,8 @@ import Header from './Header';
 import BottomNav from './BottomNav';
 import Sidebar from './Sidebar';
 import {
-  LayoutDashboard, Users, FileText, Truck, PenLine, LayoutTemplate, Settings, LogOut, ChevronDown,
-  Sun, Moon, Wand2,
+  LayoutDashboard, Users, FileText, Truck, Package, PenLine, LayoutTemplate, Settings, LogOut,
+  ChevronDown, Sun, Moon, Wand2,
 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { useDarkMode } from '../../hooks/useDarkMode';
@@ -15,6 +15,7 @@ const routeTitles: Record<string, string> = {
   '/kunden': 'Kunden',
   '/rechnungen': 'Rechnungen',
   '/lieferscheine': 'Lieferscheine',
+  '/artikel': 'Artikel',
   '/schreiben': 'Schreiben',
   '/vorlagen': 'Vorlagen',
   '/einstellungen': 'Einstellungen',
@@ -26,6 +27,7 @@ const desktopNav = [
   { to: '/kunden', label: 'Kunden', icon: Users },
   { to: '/rechnungen', label: 'Rechnungen', icon: FileText },
   { to: '/lieferscheine', label: 'Lieferscheine', icon: Truck },
+  { to: '/artikel', label: 'Artikel', icon: Package },
   { to: '/schreiben', label: 'Schreiben', icon: PenLine },
   { to: '/vorlagen', label: 'Vorlagen', icon: LayoutTemplate },
   { to: '/prompt-generator', label: 'Prompt Generator', icon: Wand2 },
@@ -146,7 +148,7 @@ export default function AppLayout() {
       </main>
 
       {/* Mobile Bottom Nav */}
-      <BottomNav />
+      <BottomNav onMore={() => setSidebarOpen(true)} />
     </div>
   );
 }

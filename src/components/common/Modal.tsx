@@ -34,16 +34,21 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', f
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in"
         onClick={onClose}
       />
 
       {/* Dialog */}
       <div
-        className={`relative bg-white dark:bg-slate-800 w-full ${sizeClasses[size]} rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[85vh]`}
+        className={`relative bg-white dark:bg-slate-800 w-full ${sizeClasses[size]} rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] sm:max-h-[85dvh] animate-slide-up`}
       >
+        {/* Grabber (nur Mobile, signalisiert Bottom-Sheet) */}
+        <div className="sm:hidden pt-2.5 flex justify-center flex-shrink-0">
+          <div className="w-9 h-1 rounded-full bg-slate-300 dark:bg-slate-600" />
+        </div>
+
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-700 flex-shrink-0">
+        <div className="flex items-center justify-between p-5 pt-3 sm:pt-5 border-b border-slate-100 dark:border-slate-700 flex-shrink-0">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{title}</h2>
           <button
             onClick={onClose}
@@ -58,7 +63,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', f
 
         {/* Footer */}
         {footer && (
-          <div className="p-5 border-t border-slate-100 dark:border-slate-700 flex-shrink-0 bg-slate-50 dark:bg-slate-900 rounded-b-2xl">
+          <div className="p-5 safe-bottom border-t border-slate-100 dark:border-slate-700 flex-shrink-0 bg-slate-50 dark:bg-slate-900 sm:rounded-b-2xl">
             {footer}
           </div>
         )}

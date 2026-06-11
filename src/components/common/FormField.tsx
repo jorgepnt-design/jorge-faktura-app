@@ -32,7 +32,7 @@ export function Input({ error, className = '', ...props }: InputProps) {
     <input
       {...props}
       className={`
-        w-full h-10 px-3 rounded-xl border bg-white text-sm text-slate-900
+        w-full h-11 sm:h-10 px-3 rounded-xl border bg-white text-base sm:text-sm text-slate-900
         dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100 dark:placeholder:text-slate-500
         placeholder:text-slate-400 transition-colors
         focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent
@@ -53,7 +53,7 @@ export function Textarea({ error, className = '', ...props }: TextareaProps) {
     <textarea
       {...props}
       className={`
-        w-full px-3 py-2.5 rounded-xl border bg-white text-sm text-slate-900
+        w-full px-3 py-2.5 rounded-xl border bg-white text-base sm:text-sm text-slate-900
         dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100 dark:placeholder:text-slate-500
         placeholder:text-slate-400 transition-colors resize-y min-h-[80px]
         focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent
@@ -74,7 +74,7 @@ export function Select({ error, className = '', children, ...props }: SelectProp
     <select
       {...props}
       className={`
-        w-full h-10 px-3 rounded-xl border bg-white text-sm text-slate-900
+        w-full h-11 sm:h-10 px-3 rounded-xl border bg-white text-base sm:text-sm text-slate-900
         dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100
         transition-colors appearance-none
         focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent

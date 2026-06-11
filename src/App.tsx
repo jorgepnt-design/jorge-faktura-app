@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useStore } from './store/useStore';
 import AppLayout from './components/layout/AppLayout';
@@ -12,7 +12,7 @@ import Articles from './pages/Articles';
 import Letters from './pages/Letters';
 import Templates from './pages/Templates';
 import Settings from './pages/Settings';
-import PromptGenerator from './pages/PromptGenerator';
+const PromptGenerator = lazy(() => import('./pages/PromptGenerator'));
 import { isSupabaseConfigured } from './lib/supabase';
 
 function AppRoutes() {
@@ -62,7 +62,14 @@ function AppRoutes() {
         <Route path="schreiben" element={<Letters />} />
         <Route path="vorlagen" element={<Templates />} />
         <Route path="einstellungen" element={<Settings />} />
-        <Route path="prompt-generator" element={<PromptGenerator />} />
+        <Route
+          path="prompt-generator"
+          element={
+            <Suspense fallback={<div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-brand-600 border-t-transparent rounded-full animate-spin" /></div>}>
+              <PromptGenerator />
+            </Suspense>
+          }
+        />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

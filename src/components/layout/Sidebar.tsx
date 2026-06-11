@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { X, LogOut, FileText } from 'lucide-react';
 import {
-  LayoutDashboard, Users, Truck, Package, PenLine, LayoutTemplate, Settings
+  LayoutDashboard, Users, Truck, Package, PenLine, LayoutTemplate, Settings, Wand2
 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 
@@ -14,6 +14,7 @@ const navItems = [
   { to: '/artikel', label: 'Artikel', icon: Package },
   { to: '/schreiben', label: 'Schreiben', icon: PenLine },
   { to: '/vorlagen', label: 'Vorlagen', icon: LayoutTemplate },
+  { to: '/prompt-generator', label: 'Prompt Generator', icon: Wand2 },
   { to: '/einstellungen', label: 'Einstellungen', icon: Settings },
 ];
 
