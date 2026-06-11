@@ -118,7 +118,7 @@ export default function Letters() {
     setShareBlobUrl(url);
     setShareFilename(`${letter.title || 'Schreiben'}.pdf`);
     setShareSubject(letter.title || 'Schreiben');
-    setShareBody(`Anbei finden Sie das Schreiben: ${letter.title}\n\nMit freundlichen Gruessen\n${profile.personName || profile.companyName}`);
+    setShareBody(`Anbei finden Sie das Schreiben: ${letter.title}\n\nMit freundlichen Grüßen\n${profile.personName || profile.companyName}`);
     setShareEmail(customer?.email || '');
   };
 
@@ -157,7 +157,7 @@ export default function Letters() {
         <EmptyState
           icon={<PenLine className="w-8 h-8" />}
           title="Noch keine Schreiben"
-          description="Erstellen Sie Anschreiben, Mahnungen oder Geschaeftsbriefe."
+          description="Erstellen Sie Anschreiben, Mahnungen oder Geschäftsbriefe."
           action={{ label: '+ Neues Schreiben', onClick: () => openForm() }}
         />
       ) : (
@@ -200,20 +200,20 @@ export default function Letters() {
                 value={form.profileId}
                 onChange={(e) => setForm({ ...form, profileId: e.target.value, customerId: null })}
               >
-                <option value="">Profil waehlen...</option>
+                <option value="">Profil wählen...</option>
                 {profiles.map((p) => (
                   <option key={p.id} value={p.id}>{p.internalName}</option>
                 ))}
               </Select>
             </FormField>
 
-            <FormField label="Empfaenger (optional)">
+            <FormField label="Empfänger (optional)">
               <Select
                 value={form.customerId || ''}
                 onChange={(e) => setForm({ ...form, customerId: e.target.value || null })}
                 disabled={!form.profileId}
               >
-                <option value="">Kein Empfaenger</option>
+                <option value="">Kein Empfänger</option>
                 {profileCustomers.map((c) => (
                   <option key={c.id} value={c.id}>{c.companyName}</option>
                 ))}
@@ -263,8 +263,8 @@ export default function Letters() {
                   <div>
                     <p className="text-sm font-semibold text-slate-900">Auf eine Seite komprimieren</p>
                     <p className="text-xs text-slate-500 mt-1">
-                      Absender und Empfaenger stehen ueber dem Betreff. Bei Aktivierung wird das Schreiben kompakter
-                      gesetzt, damit es moeglichst professionell auf eine Seite passt.
+                      Absender und Empfänger stehen über dem Betreff. Bei Aktivierung wird das Schreiben kompakter
+                      gesetzt, damit es möglichst professionell auf eine Seite passt.
                     </p>
                   </div>
                 </label>
@@ -278,7 +278,7 @@ export default function Letters() {
                 defaultValue=""
                 onChange={(e) => { if (e.target.value) applyTemplate(e.target.value); }}
               >
-                <option value="">Vorlage waehlen...</option>
+                <option value="">Vorlage wählen...</option>
                 {letterTemplates.map((t) => (
                   <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
@@ -301,8 +301,8 @@ export default function Letters() {
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}
         onConfirm={() => { if (deleteId) deleteLetter(deleteId); }}
-        title="Schreiben loeschen"
-        message="Moechten Sie dieses Schreiben wirklich loeschen?"
+        title="Schreiben löschen"
+        message="Möchten Sie dieses Schreiben wirklich löschen?"
       />
 
       <PDFPreviewModal
@@ -391,7 +391,7 @@ function LetterCard({ letter, profileName, customerName, onEdit, onDelete, onDup
                     </button>
                     <div className="my-1 border-t border-slate-100" />
                     <button onClick={() => { onDelete(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50">
-                      <Trash2 className="w-4 h-4" /> Loeschen
+                      <Trash2 className="w-4 h-4" /> Löschen
                     </button>
                   </div>
                 </>

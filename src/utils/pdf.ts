@@ -1,9 +1,9 @@
-import jsPDF from 'jspdf';
+﻿import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Invoice, DeliveryNote, Letter, Profile, Customer, Receipt } from '../types';
 import { formatCurrency, formatDate } from './helpers';
 
-// ── Translation table ─────────────────────────────────────────────────────────
+// â”€â”€ Translation table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 type Lang = 'de' | 'en';
 
 const T: Record<Lang, {
@@ -56,7 +56,7 @@ const T: Record<Lang, {
   },
 };
 
-// ── Color palette ────────────────────────────────────────────────────────────
+// â”€â”€ Color palette â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 type RGB = [number, number, number];
 const NAVY: RGB       = [26,  35,  64];   // dark navy
 const GOLD: RGB       = [212, 160,  23];  // gold text / labels
@@ -68,7 +68,7 @@ const SLATE_300: RGB  = [203, 213, 225];
 const SLATE_100: RGB  = [241, 245, 249];
 const WHITE: RGB      = [255, 255, 255];
 
-// ── Layout constants ─────────────────────────────────────────────────────────
+// â”€â”€ Layout constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const PAGE_W      = 210;
 const PAGE_H      = 297;
 const ML          = 14;   // margin left
@@ -76,12 +76,12 @@ const MR          = 14;   // margin right
 const BODY_W      = PAGE_W - ML - MR; // 182 mm
 const SAFE_BOTTOM = PAGE_H - 18 - 10; // 10 mm above footer = 269 mm
 
-// ── Low-level helpers ────────────────────────────────────────────────────────
+// â”€â”€ Low-level helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const fill = (doc: jsPDF, c: RGB) => doc.setFillColor(c[0], c[1], c[2]);
 const draw = (doc: jsPDF, c: RGB) => doc.setDrawColor(c[0], c[1], c[2]);
 const txt  = (doc: jsPDF, c: RGB) => doc.setTextColor(c[0], c[1], c[2]);
 
-// ── Page break helper ────────────────────────────────────────────────────────
+// â”€â”€ Page break helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ensureSpace(doc: jsPDF, y: number, needed: number): number {
   if (y + needed > SAFE_BOTTOM) {
     doc.addPage();
@@ -90,7 +90,7 @@ function ensureSpace(doc: jsPDF, y: number, needed: number): number {
   return y;
 }
 
-// ── Image dimension helper (reads pixels from base64 without loading into DOM) ─
+// â”€â”€ Image dimension helper (reads pixels from base64 without loading into DOM) â”€
 function getImageDimensions(dataUrl: string): { w: number; h: number } | null {
   try {
     const base64 = dataUrl.split(',')[1];
@@ -122,7 +122,7 @@ function getImageDimensions(dataUrl: string): { w: number; h: number } | null {
   return null;
 }
 
-// ── Address helpers ───────────────────────────────────────────────────────────
+// â”€â”€ Address helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function profileAddressLines(profile: Profile): string[] {
   return [
     profile.companyName || profile.internalName,
@@ -144,7 +144,7 @@ function customerAddressLines(customer: Customer): string[] {
   ].filter(Boolean);
 }
 
-// ── Modern header: gold strip + navy bar ─────────────────────────────────────
+// â”€â”€ Modern header: gold strip + navy bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function drawModernHeader(
   doc: jsPDF,
   profile: Profile,
@@ -162,14 +162,14 @@ function drawModernHeader(
   draw(doc, NAVY);
   doc.rect(0, 3, PAGE_W, 38, 'F');
 
-  // Logo (top-left inside navy bar) — preserve aspect ratio
+  // Logo (top-left inside navy bar) â€” preserve aspect ratio
   let nameX = ML;
   if (profile.logo && profile.logoOnPdf !== false) {
     try {
       const imgType = profile.logo.startsWith('data:image/png') ? 'PNG' : 'JPEG';
       const MAX_W = 44, MAX_H = 22;
 
-      // Resolve natural pixel dimensions — stored values first, then byte parser
+      // Resolve natural pixel dimensions â€” stored values first, then byte parser
       let nw = profile.logoNaturalWidth || 0;
       let nh = profile.logoNaturalHeight || 0;
       if (!nw || !nh) {
@@ -239,7 +239,7 @@ function drawModernHeader(
   return 41; // y after header
 }
 
-// ── Document title with gold underline ───────────────────────────────────────
+// â”€â”€ Document title with gold underline â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function drawDocTitle(doc: jsPDF, title: string, y: number, fontSize = 22): number {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(fontSize);
@@ -253,7 +253,7 @@ function drawDocTitle(doc: jsPDF, title: string, y: number, fontSize = 22): numb
   return y + 10;
 }
 
-// ── FROM / TO two-column section ─────────────────────────────────────────────
+// â”€â”€ FROM / TO two-column section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function drawFromTo(
   doc: jsPDF,
   fromLabel: string,
@@ -295,7 +295,7 @@ function drawFromTo(
   return y + 5 + maxLines * 5 + 6;
 }
 
-// ── Totals box ────────────────────────────────────────────────────────────────
+// â”€â”€ Totals box â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function drawModernTotals(
   doc: jsPDF,
   netTotal: number,
@@ -348,7 +348,7 @@ function drawModernTotals(
   return startY + boxH + 10;
 }
 
-// ── Draw footer on every page ─────────────────────────────────────────────────
+// â”€â”€ Draw footer on every page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function finalizeDoc(doc: jsPDF, profile: Profile): jsPDF {
   const n = doc.getNumberOfPages();
   for (let p = 1; p <= n; p++) {
@@ -358,7 +358,7 @@ function finalizeDoc(doc: jsPDF, profile: Profile): jsPDF {
   return doc;
 }
 
-// ── Text block (notes / payment) ──────────────────────────────────────────────
+// â”€â”€ Text block (notes / payment) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function drawTextBlock(doc: jsPDF, label: string, content: string, y: number): number {
   y = ensureSpace(doc, y, 20);
 
@@ -383,7 +383,7 @@ function drawTextBlock(doc: jsPDF, label: string, content: string, y: number): n
   return y + 6;
 }
 
-// ── Signature ─────────────────────────────────────────────────────────────────
+// â”€â”€ Signature â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function drawSignature(doc: jsPDF, profile: Profile, y: number): number {
   if (!profile.signature) return y;
   y = ensureSpace(doc, y, 35);
@@ -397,7 +397,7 @@ function drawSignature(doc: jsPDF, profile: Profile, y: number): number {
   return y + 22;
 }
 
-// ── Modern footer: navy bar ───────────────────────────────────────────────────
+// â”€â”€ Modern footer: navy bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function drawModernFooter(doc: jsPDF, profile: Profile): void {
   const footerY = PAGE_H - 18;
 
@@ -433,7 +433,7 @@ function drawModernFooter(doc: jsPDF, profile: Profile): void {
 
 }
 
-// ── Invoice builder ───────────────────────────────────────────────────────────
+// â”€â”€ Invoice builder â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function buildInvoiceDoc(
   invoice: Invoice,
   profile: Profile,
@@ -532,7 +532,7 @@ function buildInvoiceDoc(
   return finalizeDoc(doc, profile);
 }
 
-// ── Delivery note builder ─────────────────────────────────────────────────────
+// â”€â”€ Delivery note builder â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function buildDeliveryNoteDoc(
   note: DeliveryNote,
   profile: Profile,
@@ -683,7 +683,7 @@ function buildDeliveryNoteDoc(
   return finalizeDoc(doc, profile);
 }
 
-// ── Letter builder ────────────────────────────────────────────────────────────
+// â”€â”€ Letter builder â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function buildLetterDoc(
   letter: Letter,
   profile: Profile,
@@ -763,7 +763,7 @@ function buildLetterDoc(
   return finalizeDoc(doc, profile);
 }
 
-// ── Receipt builder ───────────────────────────────────────────────────────────
+// â”€â”€ Receipt builder â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const PAYMENT_METHOD_LABEL: Record<Lang, Record<string, string>> = {
   de: { bar: 'Bar', überweisung: 'Überweisung', karte: 'Karte', sonstige: 'Sonstige' },
   en: { bar: 'Cash', überweisung: 'Bank Transfer', karte: 'Card', sonstige: 'Other' },
@@ -842,7 +842,7 @@ function buildReceiptDoc(receipt: Receipt, profile: Profile): jsPDF {
   return finalizeDoc(doc, profile);
 }
 
-// ── Public API ────────────────────────────────────────────────────────────────
+// â”€â”€ Public API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 import { downloadBlob } from './helpers';
 
@@ -912,3 +912,4 @@ export async function sharePdfBlob(
   const url = URL.createObjectURL(blob);
   fallback(url);
 }
+
