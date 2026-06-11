@@ -1,15 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Settings as SettingsIcon, User, Package, Database,
-  Upload, Trash2, Copy, Plus, Eye, EyeOff, Download, CheckCircle,
+  User, Package, Database,
+  Upload, Trash2, Plus, Eye, EyeOff, Download, CheckCircle,
   AlertTriangle, ArrowRight, LogOut,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import Button from '../components/common/Button';
-import Modal from '../components/common/Modal';
-import ConfirmDialog from '../components/common/ConfirmDialog';
-import { FormField, Input, Textarea, Select } from '../components/common/FormField';
+import { FormField, Input } from '../components/common/FormField';
 import { Profile } from '../types';
 import { downloadBlob } from '../utils/helpers';
 

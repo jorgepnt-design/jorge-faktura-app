@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Download, Mail, MessageCircle, X, Share2 } from 'lucide-react';
 
 interface ShareModalProps {
@@ -17,6 +17,13 @@ export default function ShareModal({
   recipientEmail = '', onEmailChange,
 }: ShareModalProps) {
   const [sharing, setSharing] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen, onClose]);
 
   if (!isOpen || !blobUrl) return null;
 
@@ -70,9 +77,9 @@ export default function ShareModal({
     typeof navigator.canShare === 'function';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 z-10">
+    <div role="dialog" aria-modal="true" aria-label="Teilen" className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in" onClick={onClose} />
+      <div className="relative bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-sm p-6 safe-bottom z-10 animate-slide-up">
         <div className="flex items-center justify-between mb-5">
           <h3 className="font-semibold text-slate-900">Teilen</h3>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100">

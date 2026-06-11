@@ -1,12 +1,15 @@
-import React, { useState, useMemo } from 'react';
-import { Plus, Search, Building2, Mail, Phone, MapPin, MoreVertical, Edit2, Trash2, X } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Plus, Building2, Mail, Phone, MapPin, Edit2, Trash2 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import EmptyState from '../components/common/EmptyState';
+import SearchInput from '../components/common/SearchInput';
+import ActionMenu from '../components/common/ActionMenu';
+import { toast } from '../components/common/Toast';
 import { FormField, Input, Textarea, Select } from '../components/common/FormField';
-import { generateId, todayISO } from '../utils/helpers';
 import { Customer } from '../types';
 
 interface CustomerFormData {
@@ -40,14 +43,23 @@ const emptyForm: CustomerFormData = {
 };
 
 export default function Customers() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { profiles, loggedInProfileId, customers, addCustomer, updateCustomer, deleteCustomer } = useStore();
   const [search, setSearch] = useState('');
-  const [filterProfile, setFilterProfile] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState<CustomerFormData>({ ...emptyForm, profileId: loggedInProfileId || '' });
   const [errors, setErrors] = useState<Partial<CustomerFormData>>({});
+
+  // Kommt der Nutzer über "Neue Rechnung → Neuer Kunde", öffnet sich das
+  // Formular sofort; nach dem Speichern geht es direkt zur Rechnung weiter.
+  const redirectToInvoice = searchParams.get('redirect') === 'rechnung';
+  useEffect(() => {
+    if (searchParams.get('new') === '1') handleOpen();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filtered = useMemo(() => {
     return customers.filter((c) => {
@@ -101,10 +113,18 @@ export default function Customers() {
     if (!validate()) return;
     if (editingId) {
       updateCustomer(editingId, form);
-    } else {
-      addCustomer(form);
+      toast.success('Kunde gespeichert');
+      setShowForm(false);
+      return;
     }
+    const customer = addCustomer(form);
     setShowForm(false);
+    if (redirectToInvoice) {
+      // Weiter zur Rechnung – der neue Kunde ist dort schon vorausgewählt
+      navigate(`/rechnungen?new=1&customer=${customer.id}`, { replace: true });
+    } else {
+      toast.success('Kunde angelegt');
+    }
   };
 
   const profileName = (id: string) =>
@@ -123,31 +143,8 @@ export default function Customers() {
         </Button>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Suchen..."
-            className="w-full h-10 pl-9 pr-4 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-white"
-          />
-        </div>
-        {profiles.length > 1 && (
-          <select
-            value={filterProfile}
-            onChange={(e) => setFilterProfile(e.target.value)}
-            className="h-10 px-3 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-          >
-            <option value="">Alle Profile</option>
-            {profiles.map((p) => (
-              <option key={p.id} value={p.id}>{p.internalName}</option>
-            ))}
-          </select>
-        )}
-      </div>
+      {/* Suche */}
+      <SearchInput value={search} onChange={setSearch} placeholder="Kunden suchen..." />
 
       {/* List */}
       {filtered.length === 0 ? (
@@ -302,7 +299,7 @@ export default function Customers() {
       <ConfirmDialog
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}
-        onConfirm={() => { if (deleteId) deleteCustomer(deleteId); }}
+        onConfirm={() => { if (deleteId) { deleteCustomer(deleteId); toast.success('Kunde gelöscht'); } }}
         title="Kunde löschen"
         message="Möchten Sie diesen Kunden wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden."
       />
@@ -318,8 +315,6 @@ interface CustomerCardProps {
 }
 
 function CustomerCard({ customer, profileName, onEdit, onDelete }: CustomerCardProps) {
-  const [menuOpen, setMenuOpen] = useState(false);
-
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 relative">
       <div className="flex items-start gap-3">
@@ -356,32 +351,14 @@ function CustomerCard({ customer, profileName, onEdit, onDelete }: CustomerCardP
             )}
           </div>
         </div>
-        <div className="relative flex-shrink-0">
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400"
-          >
-            <MoreVertical className="w-4 h-4" />
-          </button>
-          {menuOpen && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-              <div className="absolute right-0 top-9 z-20 bg-white rounded-xl shadow-lg border border-slate-100 py-1 w-36">
-                <button
-                  onClick={() => { onEdit(); setMenuOpen(false); }}
-                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                >
-                  <Edit2 className="w-4 h-4" /> Bearbeiten
-                </button>
-                <button
-                  onClick={() => { onDelete(); setMenuOpen(false); }}
-                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50"
-                >
-                  <Trash2 className="w-4 h-4" /> Löschen
-                </button>
-              </div>
-            </>
-          )}
+        <div className="flex-shrink-0">
+          <ActionMenu
+            widthClass="w-36"
+            items={[
+              { label: 'Bearbeiten', icon: <Edit2 className="w-4 h-4" />, onClick: onEdit },
+              { label: 'Löschen', icon: <Trash2 className="w-4 h-4" />, onClick: onDelete, tone: 'danger' },
+            ]}
+          />
         </div>
       </div>
     </div>

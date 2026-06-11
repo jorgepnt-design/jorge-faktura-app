@@ -1,15 +1,18 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-  Plus, Search, FileText, MoreVertical, Edit2, Trash2, Copy,
-  Download, CheckCircle, XCircle, Eye, ChevronDown, Trash,
-  Share2, Receipt as ReceiptIcon, Mail, MessageCircle,
+  Plus, FileText, Edit2, Trash2, Copy,
+  Download, CheckCircle, XCircle, Eye, Trash,
+  Share2, Receipt as ReceiptIcon,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import EmptyState from '../components/common/EmptyState';
+import SearchInput from '../components/common/SearchInput';
+import ActionMenu from '../components/common/ActionMenu';
+import { toast } from '../components/common/Toast';
 import ShareModal from '../components/common/ShareModal';
 import PDFPreviewModal from '../components/common/PDFPreviewModal';
 import { FormField, Input, Textarea, Select } from '../components/common/FormField';
@@ -86,7 +89,7 @@ export default function Invoices() {
 
   const [pageTab, setPageTab] = useState<PageTab>('rechnungen');
   const [search, setSearch] = useState('');
-  const [filterProfile, setFilterProfile] = useState('');
+  const [statusFilter, setStatusFilter] = useState<InvoiceStatus | ''>('');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -121,8 +124,10 @@ export default function Invoices() {
 
   useEffect(() => {
     if (searchParams.get('new') === '1') {
-      openForm();
+      // Optional vorausgewählter Kunde (z. B. direkt nach dem Anlegen)
+      openForm(undefined, searchParams.get('customer') || '');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const profileCustomers = useMemo(
@@ -135,29 +140,39 @@ export default function Invoices() {
     [articles, form.profileId]
   );
 
+  const myInvoices = useMemo(
+    () => invoices.filter((i) => i.profileId === loggedInProfileId),
+    [invoices, loggedInProfileId]
+  );
+
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    myInvoices.forEach((i) => { counts[i.status] = (counts[i.status] || 0) + 1; });
+    return counts;
+  }, [myInvoices]);
+
   const filtered = useMemo(() => {
-    return invoices.filter((i) => {
-      if (i.profileId !== loggedInProfileId) return false;
-      const matchProfile = filterProfile ? i.profileId === filterProfile : true;
+    return myInvoices.filter((i) => {
+      if (statusFilter && i.status !== statusFilter) return false;
       const q = search.toLowerCase();
       const customer = customers.find((c) => c.id === i.customerId);
-      const matchSearch =
+      return (
         !search ||
         i.invoiceNumber.toLowerCase().includes(q) ||
         customer?.companyName.toLowerCase().includes(q) ||
-        getStatusLabel(i.status).toLowerCase().includes(q);
-      return matchProfile && matchSearch;
+        getStatusLabel(i.status).toLowerCase().includes(q)
+      );
     });
-  }, [invoices, customers, search, filterProfile, loggedInProfileId]);
+  }, [myInvoices, customers, search, statusFilter]);
 
-  const openForm = (invoice?: Invoice) => {
+  const openForm = (invoice?: Invoice, presetCustomerId = '') => {
     if (invoice) {
       setEditingId(invoice.id);
       const { id, createdAt, updatedAt, invoiceNumber, ...rest } = invoice;
       setForm(rest);
     } else {
       setEditingId(null);
-      setForm(emptyForm(loggedInProfileId || ''));
+      setForm({ ...emptyForm(loggedInProfileId || ''), customerId: presetCustomerId });
     }
     setShowForm(true);
   };
@@ -203,12 +218,20 @@ export default function Invoices() {
     });
   };
 
-  const handleSave = () => {
-    if (!form.profileId || !form.customerId) return;
+  // statusOverride umgeht das asynchrone setForm – "Als Entwurf" speichert
+  // sonst mit dem alten Status.
+  const handleSave = (statusOverride?: InvoiceStatus) => {
+    if (!form.profileId || !form.customerId) {
+      toast.error('Bitte Profil und Kunde wählen');
+      return;
+    }
+    const data = statusOverride ? { ...form, status: statusOverride } : form;
     if (editingId) {
-      updateInvoice(editingId, form);
+      updateInvoice(editingId, data);
+      toast.success('Rechnung gespeichert');
     } else {
-      addInvoice(form);
+      addInvoice(data);
+      toast.success(statusOverride === 'draft' ? 'Entwurf gespeichert' : 'Rechnung erstellt');
     }
     setShowForm(false);
   };
@@ -275,8 +298,10 @@ export default function Invoices() {
   const handleSaveReceipt = () => {
     if (receiptEditId) {
       updateReceipt(receiptEditId, receiptForm);
+      toast.success('Quittung gespeichert');
     } else {
       addReceipt(receiptForm);
+      toast.success('Quittung erstellt');
     }
     setShowReceiptForm(false);
     setReceiptEditId(null);
@@ -308,7 +333,6 @@ export default function Invoices() {
     setShareEmail('');
   };
 
-  const profileName = (id: string) => profiles.find((p) => p.id === id)?.internalName || '-';
   const customerName = (id: string) => customers.find((c) => c.id === id)?.companyName || '-';
 
   const myReceipts = useMemo(
@@ -347,39 +371,37 @@ export default function Invoices() {
 
       {pageTab === 'rechnungen' && (
         <>
-          {/* Filters */}
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Suchen..."
-                className="w-full h-10 pl-9 pr-4 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+          {/* Suche + Statusfilter */}
+          <SearchInput value={search} onChange={setSearch} placeholder="Nummer, Kunde oder Status suchen..." />
+          <div className="flex gap-1.5 overflow-x-auto scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
+            <StatusChip
+              label={`Alle (${myInvoices.length})`}
+              active={statusFilter === ''}
+              onClick={() => setStatusFilter('')}
+            />
+            {STATUSES.map((s) => (
+              <StatusChip
+                key={s.value}
+                label={`${s.label} (${statusCounts[s.value] || 0})`}
+                active={statusFilter === s.value}
+                onClick={() => setStatusFilter(statusFilter === s.value ? '' : s.value)}
               />
-            </div>
-            {profiles.length > 1 && (
-              <select
-                value={filterProfile}
-                onChange={(e) => setFilterProfile(e.target.value)}
-                className="h-10 px-3 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-              >
-                <option value="">Alle</option>
-                {profiles.map((p) => (
-                  <option key={p.id} value={p.id}>{p.internalName}</option>
-                ))}
-              </select>
-            )}
+            ))}
           </div>
 
           {/* List */}
-          {filtered.length === 0 ? (
+          {myInvoices.length === 0 ? (
             <EmptyState
               icon={<FileText className="w-8 h-8" />}
               title="Noch keine Rechnungen"
               description="Erstellen Sie Ihre erste Rechnung."
               action={{ label: '+ Neue Rechnung', onClick: () => openForm() }}
+            />
+          ) : filtered.length === 0 ? (
+            <EmptyState
+              icon={<FileText className="w-8 h-8" />}
+              title="Keine Treffer"
+              description="Keine Rechnung passt zu Suche oder Filter."
             />
           ) : (
             <div className="space-y-2">
@@ -388,16 +410,15 @@ export default function Invoices() {
                   key={inv.id}
                   invoice={inv}
                   customerName={customerName(inv.customerId)}
-                  profileName={profileName(inv.profileId)}
                   onEdit={() => openForm(inv)}
                   onDelete={() => setDeleteId(inv.id)}
-                  onDuplicate={() => duplicateInvoice(inv.id)}
+                  onDuplicate={() => { duplicateInvoice(inv.id); toast.success('Rechnung dupliziert'); }}
                   onPDF={() => handlePDF(inv)}
                   onShare={() => handleShare(inv)}
                   onPreview={() => handlePreview(inv)}
                   onCreateReceipt={() => handleCreateReceipt(inv)}
-                  onMarkPaid={() => updateInvoice(inv.id, { status: 'paid' })}
-                  onMarkOpen={() => updateInvoice(inv.id, { status: 'open' })}
+                  onMarkPaid={() => { updateInvoice(inv.id, { status: 'paid' }); toast.success(`${inv.invoiceNumber} als bezahlt markiert`); }}
+                  onMarkOpen={() => { updateInvoice(inv.id, { status: 'open' }); toast.success(`${inv.invoiceNumber} als offen markiert`); }}
                 />
               ))}
             </div>
@@ -476,12 +497,16 @@ export default function Invoices() {
         footer={
           <div className="flex flex-col sm:flex-row gap-3">
             <Button variant="secondary" onClick={() => setShowForm(false)}>Abbrechen</Button>
-            <Button variant="outline" onClick={() => { setForm((f) => ({ ...f, status: 'draft' })); handleSave(); }}>
+            <Button
+              variant="outline"
+              onClick={() => handleSave('draft')}
+              disabled={!form.profileId || !form.customerId}
+            >
               Als Entwurf
             </Button>
             <Button
               fullWidth
-              onClick={handleSave}
+              onClick={() => handleSave()}
               disabled={!form.profileId || !form.customerId || form.items.length === 0}
             >
               {editingId ? 'Speichern' : 'Rechnung erstellen'}
@@ -733,7 +758,7 @@ export default function Invoices() {
       <ConfirmDialog
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}
-        onConfirm={() => { if (deleteId) deleteInvoice(deleteId); }}
+        onConfirm={() => { if (deleteId) { deleteInvoice(deleteId); toast.success('Rechnung gelöscht'); } }}
         title="Rechnung löschen"
         message="Möchten Sie diese Rechnung wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden."
       />
@@ -741,7 +766,7 @@ export default function Invoices() {
       <ConfirmDialog
         isOpen={!!deleteReceiptId}
         onClose={() => setDeleteReceiptId(null)}
-        onConfirm={() => { if (deleteReceiptId) deleteReceipt(deleteReceiptId); }}
+        onConfirm={() => { if (deleteReceiptId) { deleteReceipt(deleteReceiptId); toast.success('Quittung gelöscht'); } }}
         title="Quittung löschen"
         message="Möchten Sie diese Quittung wirklich löschen?"
       />
@@ -817,7 +842,6 @@ export default function Invoices() {
 interface InvoiceCardProps {
   invoice: Invoice;
   customerName: string;
-  profileName: string;
   onEdit: () => void;
   onDelete: () => void;
   onDuplicate: () => void;
@@ -829,12 +853,25 @@ interface InvoiceCardProps {
   onMarkOpen: () => void;
 }
 
+function StatusChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors touch-manipulation ${
+        active
+          ? 'bg-brand-700 text-white'
+          : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
 function InvoiceCard({
-  invoice, customerName, profileName,
+  invoice, customerName,
   onEdit, onDelete, onDuplicate, onPDF, onShare, onPreview, onCreateReceipt, onMarkPaid, onMarkOpen,
 }: InvoiceCardProps) {
-  const [menuOpen, setMenuOpen] = useState(false);
-
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
       <div className="flex items-start gap-3">
@@ -851,53 +888,20 @@ function InvoiceCard({
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getStatusColor(invoice.status)}`}>
                 {getStatusLabel(invoice.status)}
               </span>
-              <div className="relative">
-                <button
-                  onClick={() => setMenuOpen(!menuOpen)}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400"
-                >
-                  <MoreVertical className="w-4 h-4" />
-                </button>
-                {menuOpen && (
-                  <>
-                    <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-                    <div className="absolute right-0 top-9 z-20 bg-white rounded-xl shadow-lg border border-slate-100 py-1 w-44">
-                      <button onClick={() => { onEdit(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                        <Edit2 className="w-4 h-4" /> Bearbeiten
-                      </button>
-                      <button onClick={() => { onPreview(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-brand-600 hover:bg-brand-50">
-                        <Eye className="w-4 h-4" /> Vorschau
-                      </button>
-                      <button onClick={() => { onPDF(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                        <Download className="w-4 h-4" /> PDF exportieren
-                      </button>
-                      <button onClick={() => { onShare(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                        <Share2 className="w-4 h-4" /> Teilen
-                      </button>
-                      <button onClick={() => { onCreateReceipt(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                        <ReceiptIcon className="w-4 h-4" /> Quittung erstellen
-                      </button>
-                      <button onClick={() => { onDuplicate(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                        <Copy className="w-4 h-4" /> Duplizieren
-                      </button>
-                      {invoice.status !== 'paid' && (
-                        <button onClick={() => { onMarkPaid(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-green-600 hover:bg-green-50">
-                          <CheckCircle className="w-4 h-4" /> Als bezahlt markieren
-                        </button>
-                      )}
-                      {invoice.status === 'paid' && (
-                        <button onClick={() => { onMarkOpen(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-amber-600 hover:bg-amber-50">
-                          <XCircle className="w-4 h-4" /> Als offen markieren
-                        </button>
-                      )}
-                      <div className="my-1 border-t border-slate-100" />
-                      <button onClick={() => { onDelete(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50">
-                        <Trash2 className="w-4 h-4" /> Löschen
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
+              <ActionMenu
+                items={[
+                  { label: 'Bearbeiten', icon: <Edit2 className="w-4 h-4" />, onClick: onEdit },
+                  { label: 'Vorschau', icon: <Eye className="w-4 h-4" />, onClick: onPreview, tone: 'brand' },
+                  { label: 'PDF exportieren', icon: <Download className="w-4 h-4" />, onClick: onPDF },
+                  { label: 'Teilen', icon: <Share2 className="w-4 h-4" />, onClick: onShare },
+                  { label: 'Quittung erstellen', icon: <ReceiptIcon className="w-4 h-4" />, onClick: onCreateReceipt },
+                  { label: 'Duplizieren', icon: <Copy className="w-4 h-4" />, onClick: onDuplicate },
+                  invoice.status !== 'paid'
+                    ? { label: 'Als bezahlt markieren', icon: <CheckCircle className="w-4 h-4" />, onClick: onMarkPaid, tone: 'success' as const }
+                    : { label: 'Als offen markieren', icon: <XCircle className="w-4 h-4" />, onClick: onMarkOpen, tone: 'warning' as const },
+                  { label: 'Löschen', icon: <Trash2 className="w-4 h-4" />, onClick: onDelete, tone: 'danger', dividerBefore: true },
+                ]}
+              />
             </div>
           </div>
           <div className="flex items-center justify-between mt-2">

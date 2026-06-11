@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserPlus, Users, ArrowRight } from 'lucide-react';
 import Modal from '../common/Modal';
-import Button from '../common/Button';
 
 interface NewInvoiceModalProps {
   isOpen: boolean;

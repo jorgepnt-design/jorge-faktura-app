@@ -3,6 +3,9 @@ import autoTable from 'jspdf-autotable';
 import { Invoice, DeliveryNote, Letter, Profile, Customer, Receipt } from '../types';
 import { formatCurrency, formatDate } from './helpers';
 
+// jspdf-autotable hängt lastAutoTable ans Dokument, deklariert es aber nicht
+type AutoTableDoc = jsPDF & { lastAutoTable: { finalY: number } };
+
 // â”€â”€ Translation table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 type Lang = 'de' | 'en';
 
@@ -514,7 +517,7 @@ function buildInvoiceDoc(
     tableLineWidth: 0.2,
   });
 
-  y = (doc as any).lastAutoTable.finalY + 6;
+  y = (doc as AutoTableDoc).lastAutoTable.finalY + 6;
 
   // Totals
   y = drawModernTotals(doc, invoice.netTotal, invoice.vatTotals, invoice.grossTotal, y, lang);
@@ -666,7 +669,7 @@ function buildDeliveryNoteDoc(
     });
   }
 
-  y = (doc as any).lastAutoTable.finalY + 8;
+  y = (doc as AutoTableDoc).lastAutoTable.finalY + 8;
 
   if (hasPrices) {
     y = drawModernTotals(doc, note.netTotal ?? 0, note.vatTotals ?? [], note.grossTotal ?? 0, y);

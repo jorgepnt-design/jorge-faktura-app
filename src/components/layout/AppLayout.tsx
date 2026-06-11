@@ -3,6 +3,7 @@ import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import Header from './Header';
 import BottomNav from './BottomNav';
 import Sidebar from './Sidebar';
+import { Toaster } from '../common/Toast';
 import {
   LayoutDashboard, Users, FileText, Truck, Package, PenLine, LayoutTemplate, Settings, LogOut,
   ChevronDown, Sun, Moon, Wand2,
@@ -149,6 +150,8 @@ export default function AppLayout() {
 
       {/* Mobile Bottom Nav */}
       <BottomNav onMore={() => setSidebarOpen(true)} />
+
+      <Toaster />
     </div>
   );
 }

@@ -12,12 +12,17 @@ export default defineConfig([
     extends: [
       js.configs.recommended,
       tseslint.configs.recommended,
-      reactHooks.configs.flat.recommended,
+      // eslint-plugin-react-hooks 5.x: Flat-Config heißt hier 'recommended-latest'
+      reactHooks.configs['recommended-latest'],
       reactRefresh.configs.vite,
     ],
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
+    },
+    rules: {
+      // `const { id, ...rest } = obj` ist hier ein gewolltes Muster zum Weglassen von Feldern
+      '@typescript-eslint/no-unused-vars': ['error', { ignoreRestSiblings: true }],
     },
   },
 ])

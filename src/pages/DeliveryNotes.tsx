@@ -1,14 +1,17 @@
 import React, { useState, useMemo } from 'react';
 import {
-  Plus, Search, Truck, MoreVertical, Edit2, Trash2, Copy,
-  Download, Package, Trash, RefreshCw, Share2, Mail, MessageCircle, Eye,
+  Plus, Truck, Edit2, Trash2, Copy,
+  Download, Package, Trash, RefreshCw, Share2, Eye,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import EmptyState from '../components/common/EmptyState';
-import { FormField, Input, Textarea, Select } from '../components/common/FormField';
+import SearchInput from '../components/common/SearchInput';
+import ActionMenu from '../components/common/ActionMenu';
+import { toast } from '../components/common/Toast';
+import { FormField, Input, Select } from '../components/common/FormField';
 import TemplateTextSelector from '../components/templates/TemplateTextSelector';
 import ShareModal from '../components/common/ShareModal';
 import PDFPreviewModal from '../components/common/PDFPreviewModal';
@@ -77,7 +80,6 @@ export default function DeliveryNotes() {
   } = useStore();
 
   const [search, setSearch] = useState('');
-  const [filterProfile, setFilterProfile] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -103,16 +105,15 @@ export default function DeliveryNotes() {
   const filtered = useMemo(() => {
     return deliveryNotes.filter((n) => {
       if (n.profileId !== loggedInProfileId) return false;
-      const matchProfile = filterProfile ? n.profileId === filterProfile : true;
       const q = search.toLowerCase();
       const customer = customers.find((c) => c.id === n.customerId);
-      const matchSearch =
+      return (
         !search ||
         n.deliveryNoteNumber.toLowerCase().includes(q) ||
-        customer?.companyName.toLowerCase().includes(q);
-      return matchProfile && matchSearch;
+        customer?.companyName.toLowerCase().includes(q)
+      );
     });
-  }, [deliveryNotes, customers, search, filterProfile]);
+  }, [deliveryNotes, customers, search, loggedInProfileId]);
 
   const openForm = (note?: DeliveryNote) => {
     if (note) {
@@ -183,8 +184,10 @@ export default function DeliveryNotes() {
     if (!form.profileId || !form.customerId) return;
     if (editingId) {
       updateDeliveryNote(editingId, form);
+      toast.success('Lieferschein gespeichert');
     } else {
       addDeliveryNote(form);
+      toast.success('Lieferschein erstellt');
     }
     setShowForm(false);
   };
@@ -221,7 +224,6 @@ export default function DeliveryNotes() {
   };
 
   const customerName = (id: string) => customers.find((c) => c.id === id)?.companyName || '-';
-  const profileName = (id: string) => profiles.find((p) => p.id === id)?.internalName || '-';
 
   return (
     <div className="space-y-4">
@@ -236,31 +238,8 @@ export default function DeliveryNotes() {
         </Button>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Suchen..."
-            className="w-full h-10 pl-9 pr-4 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
-          />
-        </div>
-        {profiles.length > 1 && (
-          <select
-            value={filterProfile}
-            onChange={(e) => setFilterProfile(e.target.value)}
-            className="h-10 px-3 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-          >
-            <option value="">Alle</option>
-            {profiles.map((p) => (
-              <option key={p.id} value={p.id}>{p.internalName}</option>
-            ))}
-          </select>
-        )}
-      </div>
+      {/* Suche */}
+      <SearchInput value={search} onChange={setSearch} placeholder="Nummer oder Kunde suchen..." />
 
       {/* List */}
       {filtered.length === 0 ? (
@@ -277,10 +256,9 @@ export default function DeliveryNotes() {
               key={note.id}
               note={note}
               customerName={customerName(note.customerId)}
-              profileName={profileName(note.profileId)}
               onEdit={() => openForm(note)}
               onDelete={() => setDeleteId(note.id)}
-              onDuplicate={() => duplicateDeliveryNote(note.id)}
+              onDuplicate={() => { duplicateDeliveryNote(note.id); toast.success('Lieferschein dupliziert'); }}
               onPDF={() => handlePDF(note)}
               onShare={() => handleShare(note)}
               onPreview={() => handlePreview(note)}
@@ -534,7 +512,7 @@ export default function DeliveryNotes() {
       <ConfirmDialog
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}
-        onConfirm={() => { if (deleteId) deleteDeliveryNote(deleteId); }}
+        onConfirm={() => { if (deleteId) { deleteDeliveryNote(deleteId); toast.success('Lieferschein gelöscht'); } }}
         title="Lieferschein löschen"
         message="Möchten Sie diesen Lieferschein wirklich löschen?"
       />
@@ -565,7 +543,6 @@ export default function DeliveryNotes() {
 interface DNCardProps {
   note: DeliveryNote;
   customerName: string;
-  profileName: string;
   onEdit: () => void;
   onDelete: () => void;
   onDuplicate: () => void;
@@ -574,9 +551,7 @@ interface DNCardProps {
   onPreview: () => void;
 }
 
-function DNCard({ note, customerName, profileName, onEdit, onDelete, onDuplicate, onPDF, onShare, onPreview }: DNCardProps) {
-  const [menuOpen, setMenuOpen] = useState(false);
-
+function DNCard({ note, customerName, onEdit, onDelete, onDuplicate, onPDF, onShare, onPreview }: DNCardProps) {
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
       <div className="flex items-start gap-3">
@@ -593,40 +568,17 @@ function DNCard({ note, customerName, profileName, onEdit, onDelete, onDuplicate
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getStatusColor(note.status)}`}>
                 {getStatusLabel(note.status)}
               </span>
-              <div className="relative">
-                <button
-                  onClick={() => setMenuOpen(!menuOpen)}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400"
-                >
-                  <MoreVertical className="w-4 h-4" />
-                </button>
-                {menuOpen && (
-                  <>
-                    <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-                    <div className="absolute right-0 top-9 z-20 bg-white rounded-xl shadow-lg border border-slate-100 py-1 w-40">
-                      <button onClick={() => { onEdit(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                        <Edit2 className="w-4 h-4" /> Bearbeiten
-                      </button>
-                      <button onClick={() => { onDuplicate(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                        <Copy className="w-4 h-4" /> Duplizieren
-                      </button>
-                      <button onClick={() => { onPreview(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-brand-600 hover:bg-brand-50">
-                        <Eye className="w-4 h-4" /> Vorschau
-                      </button>
-                      <button onClick={() => { onPDF(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                        <Download className="w-4 h-4" /> PDF exportieren
-                      </button>
-                      <button onClick={() => { onShare(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                        <Share2 className="w-4 h-4" /> Teilen
-                      </button>
-                      <div className="my-1 border-t border-slate-100" />
-                      <button onClick={() => { onDelete(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50">
-                        <Trash2 className="w-4 h-4" /> Löschen
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
+              <ActionMenu
+                widthClass="w-40"
+                items={[
+                  { label: 'Bearbeiten', icon: <Edit2 className="w-4 h-4" />, onClick: onEdit },
+                  { label: 'Duplizieren', icon: <Copy className="w-4 h-4" />, onClick: onDuplicate },
+                  { label: 'Vorschau', icon: <Eye className="w-4 h-4" />, onClick: onPreview, tone: 'brand' },
+                  { label: 'PDF exportieren', icon: <Download className="w-4 h-4" />, onClick: onPDF },
+                  { label: 'Teilen', icon: <Share2 className="w-4 h-4" />, onClick: onShare },
+                  { label: 'Löschen', icon: <Trash2 className="w-4 h-4" />, onClick: onDelete, tone: 'danger', dividerBefore: true },
+                ]}
+              />
             </div>
           </div>
           <div className="flex items-center justify-between mt-2">

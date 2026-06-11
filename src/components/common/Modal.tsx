@@ -28,10 +28,18 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', f
     return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
 
+  // Escape schließt den Dialog (Desktop-Standard)
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div role="dialog" aria-modal="true" aria-label={title} className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in"
@@ -53,6 +61,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', f
           <button
             onClick={onClose}
             className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 transition-colors"
+            aria-label="Schließen"
           >
             <X className="w-5 h-5" />
           </button>

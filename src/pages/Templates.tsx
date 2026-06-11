@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import {
   Plus, LayoutTemplate, Edit2, Trash2, Star, StarOff,
-  Paperclip, Upload, Download, Mail, MessageCircle, FileText, Image, File,
+  Paperclip, Upload, Download, MessageCircle, FileText, Image, File,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import Button from '../components/common/Button';
@@ -243,7 +243,6 @@ function AnlagenTab() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [shareItem, setShareItem] = useState<Attachment | null>(null);
-  const [shareEmail, setShareEmail] = useState('');
 
   const myAttachments = attachments.filter((a) => a.profileId === loggedInProfileId);
 
@@ -335,7 +334,7 @@ function AnlagenTab() {
                     <Download className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => { setShareItem(att); setShareEmail(''); }}
+                    onClick={() => setShareItem(att)}
                     className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-green-50 text-slate-400 hover:text-green-600"
                     title="Teilen"
                   >

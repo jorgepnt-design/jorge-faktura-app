@@ -1,10 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, Package, Edit2, Trash2, Tag } from 'lucide-react';
+import { Plus, Package, Edit2, Trash2, Tag } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import EmptyState from '../components/common/EmptyState';
+import SearchInput from '../components/common/SearchInput';
+import { toast } from '../components/common/Toast';
 import { FormField, Input, Textarea, Select } from '../components/common/FormField';
 import { Article } from '../types';
 import { formatCurrency } from '../utils/helpers';
@@ -69,8 +71,13 @@ export default function Articles() {
 
   const handleSave = () => {
     if (!form.name.trim()) return;
-    if (editingId) updateArticle(editingId, form);
-    else addArticle(form);
+    if (editingId) {
+      updateArticle(editingId, form);
+      toast.success('Artikel gespeichert');
+    } else {
+      addArticle(form);
+      toast.success('Artikel angelegt');
+    }
     setShowForm(false);
   };
 
@@ -89,17 +96,8 @@ export default function Articles() {
         </Button>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Artikel suchen..."
-          className="w-full h-10 pl-9 pr-4 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-white"
-        />
-      </div>
+      {/* Suche */}
+      <SearchInput value={search} onChange={setSearch} placeholder="Artikel suchen..." />
 
       {/* Info banner */}
       <div className="bg-blue-50 border border-blue-100 rounded-2xl p-3 flex items-start gap-3">
@@ -232,7 +230,7 @@ export default function Articles() {
       <ConfirmDialog
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}
-        onConfirm={() => { if (deleteId) deleteArticle(deleteId); }}
+        onConfirm={() => { if (deleteId) { deleteArticle(deleteId); toast.success('Artikel gelöscht'); } }}
         title="Artikel löschen"
         message="Möchten Sie diesen Artikel wirklich löschen?"
       />

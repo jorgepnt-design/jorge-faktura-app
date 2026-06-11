@@ -1,10 +1,13 @@
 import React, { useMemo, useState } from 'react';
-import { Plus, Search, PenLine, MoreVertical, Edit2, Trash2, Download, Share2, Copy, Eye, LayoutTemplate } from 'lucide-react';
+import { Plus, PenLine, Edit2, Trash2, Download, Share2, Copy, Eye, LayoutTemplate } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import EmptyState from '../components/common/EmptyState';
+import SearchInput from '../components/common/SearchInput';
+import ActionMenu from '../components/common/ActionMenu';
+import { toast } from '../components/common/Toast';
 import { FormField, Input, Select } from '../components/common/FormField';
 import TemplateTextSelector from '../components/templates/TemplateTextSelector';
 import ShareModal from '../components/common/ShareModal';
@@ -86,8 +89,10 @@ export default function Letters() {
     if (!form.profileId || !form.title.trim()) return;
     if (editingId) {
       updateLetter(editingId, form);
+      toast.success('Schreiben gespeichert');
     } else {
       addLetter(form);
+      toast.success('Schreiben erstellt');
     }
     setShowForm(false);
   };
@@ -142,16 +147,7 @@ export default function Letters() {
         </Button>
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Suchen..."
-          className="w-full h-10 pl-9 pr-4 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
-        />
-      </div>
+      <SearchInput value={search} onChange={setSearch} placeholder="Schreiben suchen..." />
 
       {filtered.length === 0 ? (
         <EmptyState
@@ -170,7 +166,7 @@ export default function Letters() {
               customerName={customerName(letter.customerId)}
               onEdit={() => openForm(letter)}
               onDelete={() => setDeleteId(letter.id)}
-              onDuplicate={() => duplicateLetter(letter.id)}
+              onDuplicate={() => { duplicateLetter(letter.id); toast.success('Schreiben dupliziert'); }}
               onPDF={() => handlePDF(letter)}
               onShare={() => handleShare(letter)}
               onPreview={() => handlePreview(letter)}
@@ -300,7 +296,7 @@ export default function Letters() {
       <ConfirmDialog
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}
-        onConfirm={() => { if (deleteId) deleteLetter(deleteId); }}
+        onConfirm={() => { if (deleteId) { deleteLetter(deleteId); toast.success('Schreiben gelöscht'); } }}
         title="Schreiben löschen"
         message="Möchten Sie dieses Schreiben wirklich löschen?"
       />
@@ -347,8 +343,6 @@ interface LetterCardProps {
 }
 
 function LetterCard({ letter, profileName, customerName, onEdit, onDelete, onDuplicate, onPDF, onShare, onPreview }: LetterCardProps) {
-  const [menuOpen, setMenuOpen] = useState(false);
-
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
       <div className="flex items-start gap-3">
@@ -363,39 +357,18 @@ function LetterCard({ letter, profileName, customerName, onEdit, onDelete, onDup
                 {profileName}{customerName !== '-' ? ` · ${customerName}` : ''}
               </p>
             </div>
-            <div className="relative flex-shrink-0">
-              <button
-                onClick={() => setMenuOpen(!menuOpen)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400"
-              >
-                <MoreVertical className="w-4 h-4" />
-              </button>
-              {menuOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-                  <div className="absolute right-0 top-9 z-20 bg-white rounded-xl shadow-lg border border-slate-100 py-1 w-40">
-                    <button onClick={() => { onEdit(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                      <Edit2 className="w-4 h-4" /> Bearbeiten
-                    </button>
-                    <button onClick={() => { onDuplicate(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                      <Copy className="w-4 h-4" /> Duplizieren
-                    </button>
-                    <button onClick={() => { onPreview(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-brand-600 hover:bg-brand-50">
-                      <Eye className="w-4 h-4" /> Vorschau
-                    </button>
-                    <button onClick={() => { onPDF(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                      <Download className="w-4 h-4" /> PDF exportieren
-                    </button>
-                    <button onClick={() => { onShare(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                      <Share2 className="w-4 h-4" /> Teilen
-                    </button>
-                    <div className="my-1 border-t border-slate-100" />
-                    <button onClick={() => { onDelete(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50">
-                      <Trash2 className="w-4 h-4" /> Löschen
-                    </button>
-                  </div>
-                </>
-              )}
+            <div className="flex-shrink-0">
+              <ActionMenu
+                widthClass="w-40"
+                items={[
+                  { label: 'Bearbeiten', icon: <Edit2 className="w-4 h-4" />, onClick: onEdit },
+                  { label: 'Duplizieren', icon: <Copy className="w-4 h-4" />, onClick: onDuplicate },
+                  { label: 'Vorschau', icon: <Eye className="w-4 h-4" />, onClick: onPreview, tone: 'brand' },
+                  { label: 'PDF exportieren', icon: <Download className="w-4 h-4" />, onClick: onPDF },
+                  { label: 'Teilen', icon: <Share2 className="w-4 h-4" />, onClick: onShare },
+                  { label: 'Löschen', icon: <Trash2 className="w-4 h-4" />, onClick: onDelete, tone: 'danger', dividerBefore: true },
+                ]}
+              />
             </div>
           </div>
           <div className="mt-2">

@@ -358,7 +358,7 @@ function InvoiceRow({
         </div>
         <p className="text-xs text-slate-500 truncate">{customerName} · {meta}</p>
       </div>
-      <p className="text-sm font-bold text-slate-900 flex-shrink-0">{formatCurrency(invoice.grossTotal)}</p>
+      <p className="num text-sm font-bold text-slate-900 flex-shrink-0">{formatCurrency(invoice.grossTotal)}</p>
     </button>
   );
 }
