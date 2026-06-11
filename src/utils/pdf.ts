@@ -690,6 +690,7 @@ function buildLetterDoc(
   customer: Customer | null,
 ): jsPDF {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const fitSinglePage = !!letter.fitToSinglePage;
 
   let y = drawModernHeader(
     doc, profile,
@@ -697,34 +698,63 @@ function buildLetterDoc(
     '',
   );
 
-  y = drawDocTitle(doc, letter.title, y + 24, 17);
+  const fromLines = [
+    profile.companyName || profile.internalName,
+    profile.personName || '',
+    profile.address || '',
+    [profile.zipCode, profile.city].filter(Boolean).join(' '),
+  ].filter(Boolean);
+  const toLines = customer ? customerAddressLines(customer) : [];
 
-  if (customer) {
-    const fromLines = [
-      profile.companyName || profile.internalName,
-      profile.personName || '',
-      profile.address || '',
-      [profile.zipCode, profile.city].filter(Boolean).join(' '),
-    ].filter(Boolean);
-    const toLines = customerAddressLines(customer);
-    y = drawFromTo(doc, 'VON', fromLines, 'AN', toLines, y + 2);
+  if (toLines.length > 0) {
+    y = drawFromTo(doc, 'VON', fromLines, 'AN', toLines, fitSinglePage ? y + 6 : y + 10);
   } else {
-    y += 4;
+    y += fitSinglePage ? 6 : 10;
   }
 
-  // Body text
-  y += 20;
+  y = drawDocTitle(doc, letter.title, fitSinglePage ? y + 2 : y + 8, fitSinglePage ? 15 : 17);
+
+  const signatureReserved = profile.signatureOnLetter && profile.signature ? (fitSinglePage ? 24 : 32) : 0;
+  const footerReserved = 18;
+  const bodyTop = fitSinglePage ? y + 2 : y + 10;
+  const bodyBottom = PAGE_H - footerReserved - signatureReserved;
+  const availableBodyHeight = Math.max(60, bodyBottom - bodyTop);
+
+  const bodyCandidates = fitSinglePage
+    ? [
+        { fontSize: 9.5, lineHeight: 5.2 },
+        { fontSize: 9, lineHeight: 4.9 },
+        { fontSize: 8.6, lineHeight: 4.6 },
+        { fontSize: 8.2, lineHeight: 4.3 },
+      ]
+    : [
+        { fontSize: 10, lineHeight: 6 },
+      ];
+
+  let bodyLayout = bodyCandidates[0];
+  let bodyLines = doc.splitTextToSize(letter.content, BODY_W);
+
+  for (const candidate of bodyCandidates) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(candidate.fontSize);
+    const candidateLines = doc.splitTextToSize(letter.content, BODY_W);
+    const neededHeight = candidateLines.length * candidate.lineHeight;
+    bodyLayout = candidate;
+    bodyLines = candidateLines;
+    if (!fitSinglePage || neededHeight <= availableBodyHeight) break;
+  }
+
+  y = bodyTop;
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
+  doc.setFontSize(bodyLayout.fontSize);
   txt(doc, SLATE_700);
-  const bodyLines = doc.splitTextToSize(letter.content, BODY_W);
-  const bodyLineH = 6;
+  const bodyLineH = bodyLayout.lineHeight;
   for (const line of bodyLines) {
     y = ensureSpace(doc, y, bodyLineH + 2);
     doc.text(line, ML, y);
     y += bodyLineH;
   }
-  y += 10;
+  y += fitSinglePage ? 6 : 10;
 
   if (profile.signatureOnLetter && profile.signature) {
     drawSignature(doc, profile, y);

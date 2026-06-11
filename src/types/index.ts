@@ -162,6 +162,7 @@ export interface Letter {
   content: string;
   templateId: string | null;
   letterDate: string;
+  fitToSinglePage?: boolean;
   createdAt: string;
   updatedAt: string;
 }

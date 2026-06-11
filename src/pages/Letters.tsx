@@ -1,16 +1,16 @@
-import React, { useState, useMemo } from 'react';
-import { Plus, Search, PenLine, MoreVertical, Edit2, Trash2, Download, Share2, Mail, MessageCircle, Copy, Eye } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Plus, Search, PenLine, MoreVertical, Edit2, Trash2, Download, Share2, Copy, Eye, LayoutTemplate } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import EmptyState from '../components/common/EmptyState';
-import { FormField, Input, Textarea, Select } from '../components/common/FormField';
+import { FormField, Input, Select } from '../components/common/FormField';
 import TemplateTextSelector from '../components/templates/TemplateTextSelector';
 import ShareModal from '../components/common/ShareModal';
 import PDFPreviewModal from '../components/common/PDFPreviewModal';
 import { Letter } from '../types';
-import { formatDate, formatCurrency, todayISO, downloadBlob } from '../utils/helpers';
+import { downloadBlob, formatDate, todayISO } from '../utils/helpers';
 import { generateLetterPDF, getLetterPdfBlob } from '../utils/pdf';
 
 type LetterFormData = Omit<Letter, 'id' | 'createdAt' | 'updatedAt'>;
@@ -24,6 +24,7 @@ function emptyForm(profileId: string): LetterFormData {
     content: '',
     templateId: null,
     letterDate: todayISO(),
+    fitToSinglePage: false,
   };
 }
 
@@ -68,7 +69,7 @@ export default function Letters() {
     if (letter) {
       setEditingId(letter.id);
       const { id, createdAt, updatedAt, ...rest } = letter;
-      setForm(rest);
+      setForm({ fitToSinglePage: false, ...rest });
     } else {
       setEditingId(null);
       setForm(emptyForm(loggedInProfileId || ''));
@@ -117,15 +118,17 @@ export default function Letters() {
     setShareBlobUrl(url);
     setShareFilename(`${letter.title || 'Schreiben'}.pdf`);
     setShareSubject(letter.title || 'Schreiben');
-    setShareBody(`Anbei finden Sie das Schreiben: ${letter.title}\n\nMit freundlichen Grüßen\n${profile.personName || profile.companyName}`);
+    setShareBody(`Anbei finden Sie das Schreiben: ${letter.title}\n\nMit freundlichen Gruessen\n${profile.personName || profile.companyName}`);
     setShareEmail(customer?.email || '');
   };
 
-  const closeShare = () => { if (shareBlobUrl) URL.revokeObjectURL(shareBlobUrl); setShareBlobUrl(null); };
+  const closeShare = () => {
+    if (shareBlobUrl) URL.revokeObjectURL(shareBlobUrl);
+    setShareBlobUrl(null);
+  };
 
   const profileName = (id: string) => profiles.find((p) => p.id === id)?.internalName || '-';
-  const customerName = (id: string | null) =>
-    id ? customers.find((c) => c.id === id)?.companyName || '-' : '-';
+  const customerName = (id: string | null) => id ? customers.find((c) => c.id === id)?.companyName || '-' : '-';
 
   return (
     <div className="space-y-4">
@@ -154,7 +157,7 @@ export default function Letters() {
         <EmptyState
           icon={<PenLine className="w-8 h-8" />}
           title="Noch keine Schreiben"
-          description="Erstellen Sie Anschreiben, Mahnungen oder Geschäftsbriefe."
+          description="Erstellen Sie Anschreiben, Mahnungen oder Geschaeftsbriefe."
           action={{ label: '+ Neues Schreiben', onClick: () => openForm() }}
         />
       ) : (
@@ -181,14 +184,14 @@ export default function Letters() {
         onClose={() => setShowForm(false)}
         title={editingId ? 'Schreiben bearbeiten' : 'Neues Schreiben'}
         size="xl"
-        footer={
+        footer={(
           <div className="flex gap-3">
             <Button variant="secondary" onClick={() => setShowForm(false)}>Abbrechen</Button>
             <Button fullWidth onClick={handleSave} disabled={!form.profileId || !form.title.trim()}>
               {editingId ? 'Speichern' : 'Erstellen'}
             </Button>
           </div>
-        }
+        )}
       >
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -197,20 +200,20 @@ export default function Letters() {
                 value={form.profileId}
                 onChange={(e) => setForm({ ...form, profileId: e.target.value, customerId: null })}
               >
-                <option value="">Profil wählen...</option>
+                <option value="">Profil waehlen...</option>
                 {profiles.map((p) => (
                   <option key={p.id} value={p.id}>{p.internalName}</option>
                 ))}
               </Select>
             </FormField>
 
-            <FormField label="Empfänger (optional)">
+            <FormField label="Empfaenger (optional)">
               <Select
                 value={form.customerId || ''}
                 onChange={(e) => setForm({ ...form, customerId: e.target.value || null })}
                 disabled={!form.profileId}
               >
-                <option value="">Kein Empfänger</option>
+                <option value="">Kein Empfaenger</option>
                 {profileCustomers.map((c) => (
                   <option key={c.id} value={c.id}>{c.companyName}</option>
                 ))}
@@ -244,13 +247,38 @@ export default function Letters() {
             </FormField>
           </div>
 
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 flex-shrink-0">
+                <LayoutTemplate className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={!!form.fitToSinglePage}
+                    onChange={(e) => setForm({ ...form, fitToSinglePage: e.target.checked })}
+                    className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                  />
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">Auf eine Seite komprimieren</p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Absender und Empfaenger stehen ueber dem Betreff. Bei Aktivierung wird das Schreiben kompakter
+                      gesetzt, damit es moeglichst professionell auf eine Seite passt.
+                    </p>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+
           {letterTemplates.length > 0 && (
             <FormField label="Vorlage laden">
               <Select
                 defaultValue=""
                 onChange={(e) => { if (e.target.value) applyTemplate(e.target.value); }}
               >
-                <option value="">Vorlage wählen...</option>
+                <option value="">Vorlage waehlen...</option>
                 {letterTemplates.map((t) => (
                   <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
@@ -264,7 +292,7 @@ export default function Letters() {
             profileId={form.profileId || null}
             value={form.content}
             onChange={(v) => setForm({ ...form, content: v })}
-            placeholder="Sehr geehrte Damen und Herren,&#10;&#10;..."
+            placeholder={'Sehr geehrte Damen und Herren,\n\n...'}
           />
         </div>
       </Modal>
@@ -273,19 +301,25 @@ export default function Letters() {
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}
         onConfirm={() => { if (deleteId) deleteLetter(deleteId); }}
-        title="Schreiben löschen"
-        message="Möchten Sie dieses Schreiben wirklich löschen?"
+        title="Schreiben loeschen"
+        message="Moechten Sie dieses Schreiben wirklich loeschen?"
       />
 
-      {/* PDF preview */}
       <PDFPreviewModal
         blobUrl={previewBlobUrl}
         title={previewTitle}
-        onClose={() => { if (previewBlobUrl) URL.revokeObjectURL(previewBlobUrl); setPreviewBlobUrl(null); }}
-        onDownload={async () => { if (previewBlobUrl) { const res = await fetch(previewBlobUrl); await downloadBlob(await res.blob(), `${previewTitle}.pdf`); } }}
+        onClose={() => {
+          if (previewBlobUrl) URL.revokeObjectURL(previewBlobUrl);
+          setPreviewBlobUrl(null);
+        }}
+        onDownload={async () => {
+          if (previewBlobUrl) {
+            const res = await fetch(previewBlobUrl);
+            await downloadBlob(await res.blob(), `${previewTitle}.pdf`);
+          }
+        }}
       />
 
-      {/* Share modal */}
       <ShareModal
         isOpen={!!shareBlobUrl}
         onClose={closeShare}
@@ -357,7 +391,7 @@ function LetterCard({ letter, profileName, customerName, onEdit, onDelete, onDup
                     </button>
                     <div className="my-1 border-t border-slate-100" />
                     <button onClick={() => { onDelete(); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50">
-                      <Trash2 className="w-4 h-4" /> Löschen
+                      <Trash2 className="w-4 h-4" /> Loeschen
                     </button>
                   </div>
                 </>
@@ -367,7 +401,14 @@ function LetterCard({ letter, profileName, customerName, onEdit, onDelete, onDup
           <div className="mt-2">
             <p className="text-xs text-slate-400 line-clamp-2">{letter.content}</p>
           </div>
-          <p className="text-xs text-slate-400 mt-1">{formatDate(letter.letterDate)}</p>
+          <div className="mt-1 flex items-center gap-2 text-xs text-slate-400">
+            <span>{formatDate(letter.letterDate)}</span>
+            {letter.fitToSinglePage && (
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                1 Seite
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </div>
